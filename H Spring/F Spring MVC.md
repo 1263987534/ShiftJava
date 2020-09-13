@@ -81,7 +81,7 @@ MVC 是一种**设计模式**，Spring MVC 是一款很优秀的 MVC 框架。Sp
 
 **作用**：按照**特定规则（HandlerAdapter 要求的规则）去执行 Handler**。
 
-通过 **HandlerAdapter** 执行 **handler**，这是**适配器模式**的应用，通过扩展适配器可以对更多类型的处理器进行执行。
+通过 **HandlerAdapter** 执行 **handler**，这是**适配器模式**的应用，通过扩展适配器可以对更多**类型的处理器**进行执行。
 
 ##### 4. 处理器Handler
 

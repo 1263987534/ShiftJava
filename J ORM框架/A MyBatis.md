@@ -86,7 +86,7 @@ try{
 
 1、执行**静态 SQL** 语句。通常通过 **Statement** 实例实现。
 
-2、执行**动态 SQL**语句。通常通过 **PreparedStatement** 实例实现。
+2、执行**动态 SQL** 语句。通常通过 **PreparedStatement** 实例实现。
 
 3、执行数据库**存储过程**。通常通过 **CallableStatement** 实例实现。
 
@@ -236,7 +236,7 @@ JDBC 用起来是**比较繁杂的，很多步骤都是重复**的，而且存�
 
 #### MyBatis框架整体设计
 
-MyBatis 是一款优秀的**持久层框架**，它支持定制化 SQL、存储过程以及高级映射。MyBatis 避免了几乎所有的 JDBC 代码和手动设置参数以及获取结果集。MyBatis 可以使用简单的 **XML 或注解来配置和映射原生类型**、接口和 Java 的 POJO（Plain Old Java Objects，普通老式 Java 对象）为数据库中的记录。
+**MyBatis** 是一款优秀的**持久层框架**，它支持定制化 SQL、存储过程以及高级映射。MyBatis 避免了几乎所有的 JDBC 代码和手动设置参数以及获取结果集。MyBatis 可以使用简单的 **XML 或注解来配置和映射原生类型**、接口和 Java 的 POJO（Plain Old Java Objects，普通老式 Java 对象）为数据库中的记录。
 
 其它持久层解决方案：JDBC、DataUtils、JdbcTemplate、Hibernate。
 
@@ -312,7 +312,7 @@ MyBatis 是一款优秀的**持久层框架**，它支持定制化 SQL、存储�
 
 ##### 1. SQL语句块statement
 
-通过原生 JDBC 写 DAO 的年代 ，程序员最怕莫过于 **拼接 SQL 语句**，拼接参数与设置返回结果集，Hibernate 将拼接 SQL时代成为过去，通过 ORM 映谢，完全不需要处理任何 SQL，但这又带来了新的问题就是。**无法编写自定义 SQL** 从而丧失了灵活活及更好的性能。MyBatis 通过 mapper 映射 SQL 很好解决了这一点。它无需在 JAVA 代码中拼接 SQL，而是将其**移至 mapper 文件集中处理 SQL**节约了大量的开发时间。
+通过原生 JDBC 写 DAO 的年代 ，程序员最怕莫过于 **拼接 SQL 语句**，拼接参数与设置返回结果集，Hibernate 将拼接  SQL 时代成为过去，通过 ORM 映谢，完全不需要处理任何 SQL，但这又带来了新的问题就是。**无法编写自定义 SQL** 从而丧失了灵活活及更好的性能。MyBatis 通过 mapper 映射 SQL 很好解决了这一点。它无需在 JAVA 代码中拼接 SQL，而是将其**移至 mapper 文件集中处理 SQL**节约了大量的开发时间。
 
 ###### (1) Mapper中的元素
 
@@ -847,7 +847,7 @@ public int update(MappedStatement ms, Object parameter) throws SQLException {
 
 - **MyBatis 一级缓存的生命周期和 SqlSession 一致**。
 - MyBatis 一级缓存内部设计简单，只是一个没有容量限定的 HashMap，在缓存的功能性上有所欠缺。
-- MyBatis 的一级缓存最大范围是 **SqlSession 内**部，有多个 SqlSession 或者分布式的环境下，数据库写操作会引起脏数据。
+- MyBatis 的一级缓存最大范围是 **SqlSession 内部**，有多个 SqlSession 或者分布式的环境下，数据库写操作会引起脏数据。
 - MyBatis 和 **Spring 整合**后进行 mapper 代理开发，**不支持一级缓存**。
 
 ##### 2. 二级缓存
@@ -906,7 +906,7 @@ blocking 属性可以用于**防止缓存击穿**。这是通过**加锁**实现
 
 ###### (4) 源码分析
 
-MyBatis 在为 SqlSession 对象创建 Excutor 对象时候，会 Executor 对象加上一个**装饰者：CachingExecutor**，这时 SqlSession 使用 CachingExecutor 对象来完成操作请求。CachingExecutor 对于查询请求，会先判断该查询请求在二级缓存中是否有缓存，如果有则直接返回缓存结果；如果没有再交给真正的 Executor 对象来完成查询操作，之后 CachingExecutor 会将真正 Executor 返回的查询结果放置到缓存中，然后再返回给用户。
+MyBatis 在为 SqlSession 对象创建 Excutor 对象时候，会 Executor 对象加上一个**装饰者：CachingExecutor**，这时 SqlSession 使用 CachingExecutor 对象来完成操作请求。CachingExecutor 对于查询请求，会先判断该查询请求在二级缓存中是否有缓存，如果有则直接返回缓存结果；如果没有再交给真正的 Executor 对象来完成查询操作，之后 CachingExecutor 会将真正 Executor 返回的查询结果**放置到缓存**中，然后再返回给用户。
 
 ![image-20200518144236476](assets/image-20200518144236476.png)
 
@@ -1233,7 +1233,7 @@ public Executor newExecutor(Transaction transaction, ExecutorType executorType) 
 
 DefaultSqlSession 到底是干什么的呢？DefaultSqlSession 实现了 **SqlSession** 接口，里面有各种各样的 **SQL 执行方法**，主要用于 SQL 操作的**对外接口**，它会的**调用执行器来执行实际的 SQL 语句**。
 
-介绍一下 **MappedStatement** ：
+介绍一下 **MappedStatement**：
 
 **作用：** **MappedStatement 与 Mapper 配置文件中的一个 select/update/insert/delete 节点相对应**。mapper 中配置的标签都被封装到了此对象中，主要用途是**描述一条 SQL 语句**。
 

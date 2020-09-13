@@ -752,6 +752,8 @@ public int[][] merge(int[][] intervals) {
 
 ###### 区间调度
 
+📘 **公司**：滴滴
+
 **题目**：很多形如 **[start, end]** 的闭区间，请设计一个算法，**算出这些区间中最多有几个互不相交的区间**。比如给定区间 [[1,3], [2,4], [3,6]]，这些区间最多有 2 个区间互不相交，即 [[1,3], [3,6]]，算法应该返回 2。注意**边界相同并不算相交**。这个题目与**每天参加的活动量或者排课的问题**有点类似。
 
 **贪心思路**：
@@ -1464,6 +1466,46 @@ public int singleNonDuplicate(int[] nums) {
 }
 ```
 
+###### 有序矩阵的第K小元素
+
+**[题目378](https://leetcode-cn.com/problems/kth-smallest-element-in-a-sorted-matrix/)**：给定一个 n x n 矩阵，其中每行和每列元素均按升序排序，找到矩阵中第 k 小的元素。请注意，它是排序后的第 k 小元素，而不是第 k 个不同的元素。
+
+```
+matrix = [
+   [ 1,  5,  9],
+   [10, 11, 13],
+   [12, 13, 15]
+],  k = 8,  返回 13。
+```
+
+有序的可以考虑二分解法。
+
+````java
+public int kthSmallest(int[][] matrix, int k) {
+    int m = matrix.length, n = matrix[0].length;
+    // 分别起始为左上角与右下角
+    int low = matrix[0][0], high = matrix[m - 1][n - 1];
+    while (low <= high) {
+        // 中点索引
+        int mid = low + (high - low) / 2;
+        int cnt = 0;
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n && matrix[i][j] <= mid; j++) {
+                cnt++;
+            }
+        }
+        if (cnt < k) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return low;
+}
+````
+
+
+
 ##### 搜索与回溯题目
 
 程序实现 BFS 时需要考虑以下问题：
@@ -1480,46 +1522,6 @@ Backtracking（回溯）属于 **DFS**。
 
 - 在**访问一个新元素**进入新的递归调用时，需要**将新元素标记为已经访问**，这样才能在继续递归调用时**不用重复访问该元素**；
 - 但是在**递归返回时**，需要**将元素标记为未访问**，因为只需要保证在一个递归链中不同时访问一个元素，可以访问已经访问过但是不在当前递归链中的元素。
-
-###### 相加之和的组合总数III
-
-📘 **公司**：字节
-
-**[题目](https://leetcode-cn.com/problems/combination-sum-iii/)**：找出所有**相加之和为 n 的 k 个数的组合**。组合中只允许含有 1 - 9 的正整数，并且每种组合中不存在重复的数字。
-
-```
-输入: k = 3, n = 9   输出: [[1,2,6], [1,3,5], [2,3,4]]
-```
-
-使用回溯法找出每次的路径即可。
-
-```java
-List<List<Integer>> resList = new ArrayList<>();
-// 记录一次路径
-List<Integer> pathList = new ArrayList<>();
-public List<List<Integer>> combinationSum3(int k, int n) {
-    process(1, 0, n, k);
-    return resList;
-}
-
-private void process(int start, int level, int target, int k) {
-    if (target < 0) return;
-    // 这里总和已经达到了n,而且总和个数满足了k个情况
-    if (target == 0 && level == k) {
-        resList.add(new ArrayList<>(pathList));
-        return;
-    }
-    // 从1到9挨着遍历
-    for (int i = start; i <= 9; i++) {
-        // 选择i
-        pathList.add(i);
-        // 递归
-        process(i + 1, level + 1, target - i, k);
-        // 撤消选择i,进行回溯
-        pathList.remove(pathList.size() - 1);
-    }
-}
-```
 
 ###### 岛屿数量
 
@@ -1656,10 +1658,6 @@ public void dfs(char[][] board, int i, int j) {
 }
 ```
 
-
-
-
-
 ###### 网格中从原点到特定点的最短路径长度
 
 **题目**：1 表示可以经过某个位置，求解从 (0, 0) 位置到 (tr, tc) 位置的最短路径长度。
@@ -1745,47 +1743,6 @@ boolean dfs(int i, int j, int walkLen) {
     // 回溯,撤消修改
     matrix[i][j] = tmp;
     return res;
-}
-```
-
-###### 子集
-
-**[题目](https://leetcode-cn.com/problems/subsets/)**：给定一组**不含重复元素**的整数数组 nums，返回该数组所有可能的子集（幂集）。
-
-```java
-输入: nums = [1,2,3] 输出:
-[ [3],
-  [1],
-  [2],
-  [1,2,3],
-  [1,3],
-  [2,3],
-  [1,2],
-  [] ]
-```
-
-用普通的回溯，记录**全部路径**即可。
-
-```java
-private List<List<Integer>> resList = new ArrayList<>();
-
-public List<List<Integer>> subsets(int[] nums) {
-    backtrack(0, nums, new ArrayList<>());
-    return resList;
-}
-
-
-private void backtrack(int i, int[] nums, ArrayList<Integer> tempList) {
-    // 所有路径都加入结果集
-    resList.add(new ArrayList<>(tempList));
-    // 回溯
-    for (int j = i; j < nums.length; j++) {
-        // 加入当前的选择
-        tempList.add(nums[j]);
-        backtrack(j + 1, nums, tempList);
-        // 撤消当前选择
-        tempList.remove(tempList.size() - 1);
-    }
 }
 ```
 
@@ -1992,7 +1949,7 @@ private void backtrack(Deque<Integer> combinePath, int start, int k, final int n
 }
 ```
 
-###### 组合总和
+###### 相加之和的组合总数I
 
 **[题目39](https://leetcode-cn.com/problems/combination-sum/)**：给定一个无重复元素的数组 candidates 和一个目标数 target ，找出 candidates 中所有可以使数字和为 target 的组合。candidates 中的数字可以**无限制**重复被选取。
 
@@ -2031,6 +1988,192 @@ private void backtrack(Deque<Integer> path, int start, int target, final int[] n
 ```
 
 这个题其实就是**零钱兑换的方法数**的递归版本。
+
+###### 相加之和的组合总数II
+
+**[题目40](https://leetcode-cn.com/problems/combination-sum-ii/)**：给定一个数组 candidates 和一个目标数 target ，找出 candidates 中所有可以使数字和为 target 的组合。candidates 中的每个数字在**每个组合中只能使用一次**。
+
+````java
+输入: candidates = [10,1,2,7,6,1,5], target = 8,  所求解集为:
+[
+  [1, 7],
+  [1, 2, 5],
+  [2, 6],
+  [1, 1, 6]
+]
+````
+
+```java
+private List<List<Integer>> resList = new ArrayList<>();
+
+public List<List<Integer>> combinationSum2(int[] candidates, int target) {
+    // 先排个序
+    Arrays.sort(candidates);
+    // 路径队列
+    Deque<Integer> path = new LinkedList<>();
+    // 记录是否已经访问过
+    boolean[] visited = new boolean[candidates.length];
+    backtrack(path, visited, 0, target, candidates);
+    return resList;
+}
+
+private void backtrack(Deque<Integer> path, boolean[] hasVisited, int start, int target, final int[] candidates) {
+    // 目标为0则成功
+    if (target == 0) {
+        // 注意需要生成一个新的列表存起来
+        resList.add(new ArrayList<>(path));
+        return;
+    }
+    // 从start开始递归
+    for (int i = start; i < candidates.length; i++) {
+        // 剪枝
+        if (i != 0 && candidates[i] == candidates[i - 1] && !hasVisited[i - 1]) {
+            continue;
+        }
+        if (candidates[i] <= target) {
+            path.add(candidates[i]);
+            hasVisited[i] = true;
+            backtrack(path, hasVisited, i + 1, target - candidates[i], candidates);
+            hasVisited[i] = false;
+            path.removeLast();
+        }
+    }
+}
+```
+
+###### 相加之和的组合总数III
+
+📘 **公司**：字节
+
+**[题目216](https://leetcode-cn.com/problems/combination-sum-iii/)**：找出所有**相加之和为 n 的 k 个数的组合**。组合中只允许含有 1 - 9 的正整数，并且每种组合中**不存在重复**的数字。
+
+```
+输入: k = 3, n = 9   输出: [[1,2,6], [1,3,5], [2,3,4]]
+```
+
+使用回溯法找出每次的路径即可。
+
+```java
+List<List<Integer>> resList = new ArrayList<>();
+// 记录一次路径
+Deque<Integer> path = new LinkedList<>();
+
+public List<List<Integer>> combinationSum3(int k, int n) {
+    process(1, 0, n, k);
+    return resList;
+}
+
+private void process(int start, int level, int target, int k) {
+    if (target < 0) return;
+    // 这里总和已经达到了n,而且总和个数满足了k个情况
+    if (target == 0 && level == k) {
+        resList.add(new ArrayList<>(path));
+        return;
+    }
+    // 从1到9挨着遍历
+    for (int i = start; i <= 9; i++) {
+        // 选择i
+        path.add(i);
+        // 递归
+        process(i + 1, level + 1, target - i, k);
+        // 撤消选择i,进行回溯
+        path.removeLast();
+    }
+}
+```
+
+###### 无重复元素求子集
+
+**[题目78](https://leetcode-cn.com/problems/subsets/)**：给定一组**不含重复元素**的整数数组 nums，返回该数组所有可能的子集（幂集）。子集不能重复，[1, 2] 和 [2, 1] 这种子集算**重复**。
+
+```java
+输入: nums = [1,2,3] 输出:
+[ [3],
+  [1],
+  [2],
+  [1,2,3],
+  [1,3],
+  [2,3],
+  [1,2],
+  [] ]
+```
+
+用普通的**回溯**，记录**全部路径**即可。由于是不重复的数组，所以**从左到右依次选择起点**就行了。
+
+```java
+private List<List<Integer>> resList = new ArrayList<>();
+
+public List<List<Integer>> subsets(int[] nums) {
+
+    Deque<Integer> path = new LinkedList<>();
+    backtrack(0, nums, path);
+    return resList;
+}
+
+private void backtrack(int start, int[] nums, Deque<Integer> tempList) {
+    // 所有路径都重新生成并加入结果集
+    resList.add(new ArrayList<>(tempList));
+    // 回溯
+    for (int i = start; i < nums.length; i++) {
+        // 加入当前的选择
+        tempList.add(nums[i]);
+        backtrack(i + 1, nums, tempList);
+        // 撤消当前选择
+        tempList.removeLast();
+    }
+}
+```
+
+###### 含重复元素求子集
+
+**[题目90]()**：给定一个可能包含重复元素的整数数组 nums，返回该数组所有可能的子集（幂集）。
+
+```
+输入: [1,2,2]    输出:
+[
+  [2],
+  [1],
+  [1,2,2],
+  [2,2],
+  [1,2],
+  []
+]
+```
+
+```java
+private List<List<Integer>> resList = new ArrayList<>();
+
+public List<List<Integer>> subsetsWithDup(int[] nums) {
+    // 先排个序
+    Arrays.sort(nums);
+    Deque<Integer> path = new LinkedList<>();
+    boolean[] hasVisited = new boolean[nums.length];
+    // 考虑不同的子集大小
+    for (int size = 0; size <= nums.length; size++) {
+        backtrack(0, path, hasVisited, size, nums);
+    }
+    return resList;
+}
+
+private void backtrack(int start, Deque<Integer> path, boolean[] hasVisited, final int size, final int[] nums) {
+    // 大小合格
+    if (path.size() == size) {
+        resList.add(new ArrayList<>(path));
+        return;
+    }
+    for (int i = start; i < nums.length; i++) {
+        // 含重复元素的统一剪枝方法
+        if (i != 0 && nums[i] == nums[i - 1] && !hasVisited[i - 1]) {
+            continue;
+        }
+        path.add(nums[i]);
+        hasVisited[i] = true;
+        backtrack(i + 1, path, hasVisited, size, nums);
+        hasVisited[i] = false;
+        path.removeLast();
+    }
+}
+```
 
 ###### 八皇后
 
@@ -2323,7 +2466,7 @@ private void backtrack(StringBuilder path, final String digits) {
 
 ###### 分割回文串
 
-**[题目](https://leetcode-cn.com/problems/palindrome-partitioning/)**：给定一个字符串 s，将 s 分割成一些子串，使每个子串都是回文串。返回 *s* 所有可能的分割方案。
+**[题目131](https://leetcode-cn.com/problems/palindrome-partitioning/)**：给定一个字符串 s，将 s 分割成一些子串，使每个子串都是回文串。返回 s 所有可能的分割方案。
 
 ```
 输入: "aab"   输出:
@@ -3078,7 +3221,181 @@ public int findK(int[] nums1, int i, int[] nums2, int j, int k) {
 }
 ```
 
+###### 数组区间和
 
+**[题目303](https://leetcode-cn.com/problems/range-sum-query-immutable/)**：给定一个整数数组  nums，求出数组从索引 i 到 j  (i ≤ j) 范围内元素的总和，包含 i,  j 两点。
+
+```java
+给定 nums = [-2, 0, 3, -5, 2, -1]，求和函数为 sumRange()
+sumRange(0, 2) -> 1
+sumRange(2, 5) -> -1
+sumRange(0, 5) -> -3
+```
+
+**求区间 i \~ j 的和，可以转换为 sum[j + 1] - sum[i]**，其中 sum[i] 为 0 \~ i - 1 的和，先求出到每个位置的和存起来，后面就是 O(1) 复杂度计算了。
+
+```java
+class NumArray {
+	// 存储和
+    private int[] sums;
+	// 初始化的时候就计算全部的和
+    public NumArray(int[] nums) {
+        sums = new int[nums.length + 1];
+        for (int i = 1; i <= nums.length; i++) {
+            sums[i] = sums[i - 1] + nums[i - 1];
+        }
+    }
+
+    public int sumRange(int i, int j) {
+        return sums[j + 1] - sums[i];
+    }
+}
+```
+
+###### 数组中超过一半的数
+
+**[题目169](https://leetcode-cn.com/problems/majority-element/)**：给定一个大小为 n 的数组，找到其中的多数元素。多数元素是指在数组中出现**次数大于 n/2** 的元素。
+
+先对数组排序，最中间那个数出现次数一定多于 n / 2。
+
+```java
+public int majorityElement(int[] nums) {
+    Arrays.sort(nums);
+    return nums[nums.length / 2];
+}
+```
+
+可以利用 Boyer-Moore Majority Vote Algorithm 投票算法来解决这个问题，使得时间复杂度为 O(N)。可以这么理解该算法：**使用 cnt 来统计一个元素出现的次数**，当遍历到的元素和统计元素不相等时，令 cnt--。如果前面查找了 i 个元素，且 cnt == 0，说明前 i 个元素没有 **majority**，或者有 majority，但是出现的次数少于 i / 2，因为如果多于 i / 2 的话 cnt 就一定不会为 0。此时剩下的 n - i 个元素中，majority 的数目依然多于 (n - i) / 2，因此继续查找就能找出 majority。
+
+```java
+public int majorityElement(int[] nums) {
+    int cnt = 0, majority = nums[0];
+    for (int num : nums) {
+        majority = (cnt == 0) ? num : majority;
+        cnt = (majority == num) ? cnt + 1 : cnt - 1;
+    }
+    return majority;
+}
+```
+
+###### 最长和谐子序列
+
+**[题目594](https://leetcode-cn.com/problems/longest-harmonious-subsequence/)**：和谐序列是指序列中**最大元素与最小元素差值正好为 1 的序列**，求给定数组的最长和谐子序列。
+
+利用 map 进行计数即可。
+
+```java
+public int findLHS(int[] nums) {
+    // 计数的map
+    Map<Integer, Integer> cntMap = new HashMap<>();
+    // 将全部的元素记录到map中
+    for (int num : nums) {
+        cntMap.put(num, cntMap.getOrDefault(num, 0) + 1);
+    }
+    int res = 0;
+    // 遍历寻找当前元素及其下一个元素(因为和谐序列差值最大为1)
+    for (int num : cntMap.keySet()) {
+        if (cntMap.containsKey(num + 1)) {
+            res = Math.max(res, cntMap.get(num + 1) + cntMap.get(num));
+        }
+    }
+    return res;
+}
+```
+
+###### 移动0到数组末尾
+
+**[题目283](https://leetcode-cn.com/problems/move-zeroes/)**：给定一个数组 `nums`，编写一个函数将所有 `0` 移动到数组的末尾，同时保持非零元素的相对顺序。
+
+```
+输入: [0,1,0,3,12]  输出: [1,3,12,0,0]
+```
+
+从前往后遍历，遇到非 0 的就拷贝的数组前面。
+
+```java
+public void moveZeroes(int[] nums) {
+    int index = 0;
+    for (int num : nums) {
+        // 不为0就拷贝到前面
+        if (num != 0) {
+            nums[index++] = num;
+        }
+    }
+    // 将后面的全部置0
+    while (index < nums.length) {
+        nums[index++] = 0;
+    }
+}
+```
+
+###### 改变矩阵维度
+
+**[题目566](https://leetcode-cn.com/problems/reshape-the-matrix/)**：给出一个由二维数组表示的矩阵，以及两个正整数`r`和`c`，分别表示想要的重构的矩阵的行数和列数。重构后的矩阵需要将原始矩阵的所有元素以相同的**行遍历顺序**填充。如果具有给定参数的`reshape`操作是可行且合理的，则输出新的重塑矩阵；否则，输出原始矩阵。
+
+```java
+输入: nums = 
+[[1,2],
+ [3,4]]
+r = 1, c = 4
+输出: [[1,2,3,4]]
+解释: 行遍历nums的结果是 [1,2,3,4]。新的矩阵是 1 * 4 矩阵, 用之前的元素值一行一行填充新矩阵。
+```
+
+```java
+public int[][] matrixReshape(int[][] nums, int r, int c) {
+    int m = nums.length, n = nums[0].length;
+    // 不合格直接返回原矩阵
+    if (m * n != r * c) {
+        return nums;
+    }
+    int[][] res = new int[r][c];
+    int index = 0;
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            res[i][j] = nums[index / n][index % n];
+            index++;
+        }
+    }
+    return res;
+}
+```
+
+###### 数组中重复的数
+
+**[题目287](https://leetcode-cn.com/problems/find-the-duplicate-number/)**：给定一个包含 n + 1 个整数的数组 nums，其**数字都在 1 到 n 之间**（包括 1 和 n），可知至少存在一个重复的整数。假设只有一个重复的整数，找出这个重复的数。
+
+```
+输入: [1,3,4,2,2]  输出: 2
+```
+
+由于数字范围已经给定，所以可以通过将数字放到其对应索引的位置处进行求解。
+
+```java
+public int findDuplicate(int[] nums) {
+    // Base case
+    if (nums == null || nums.length <= 0) return -1;
+    // 遍历一次数组
+    for (int i = 0; i < nums.length; i++) {
+        // 如果当前位置不等于索引则不断进行交换
+        while (nums[i] != i) {
+            // 如果目标索引处已经有了元素则说明重复
+            if (nums[i] == nums[nums[i]]) {
+                return nums[i];
+            }
+            // 否则进行交换
+            swap(nums, i, nums[i]);
+        }
+    }
+    return -1;
+}
+
+private void swap(int[] nums, int i, int j) {
+    int t = nums[i];
+    nums[i] = nums[j];
+    nums[j] = t;
+}
+```
 
 ##### 链表题目
 
@@ -3259,47 +3576,46 @@ ListNode reverse(ListNode head) {
 
 [**题目**](https://leetcode-cn.com/problems/palindrome-linked-list/)：请判断一个链表是否为**回文链表**。
 
-不用栈，首先使用**双指针**方式找到链表**中间结点**，然后从此处**反转**链表的**右半部分**，使其最后**指向中间结点**，然后从两边的**两侧同时开始移动**比较。这个过程虽然复杂但是空间复杂度为 **O(1)**。
+不用栈，首先使用**双指针**方式找到链表**中间结点**，然后从此处**反转**链表的**右半部分**，使其最后**指向中间结点**，然后从两边的**两侧同时开始移动**比较。这个过程虽然复杂但是空间复杂度为 **O(1)**。使用的是上面求链表中点的模板。
 
 ```java
-public static boolean isPalindrome(ListNode head) {
-    ListNode dummy = new ListNode(-1);
-    dummy.next = head;
-    // 遍历结束时slow指向的是mid的前一个,这里跟模板有点出入
-    ListNode slow = dummy;
-    ListNode fast = head;
-    while (fast != null && fast.next != null){
+public boolean isPalindrome(ListNode head) {
+    if (head == null || head.next == null) return true;
+    ListNode slow = head, fast = head.next;
+    while (fast != null && fast.next != null) {
         slow = slow.next;
         fast = fast.next.next;
     }
-    // 逆序后面的链表
-    ListNode head2 = reverse(slow.next);
-    // 断开连接
-    slow.next = null;
-    while (head != null && head2 != null){
-        if(head.val != head2.val) return false;
-        else{
-            head = head.next;
-            head2 = head2.next;
-        }
-    }
-    return true;
+    if (fast != null) slow = slow.next;  // 偶数节点，让 slow 指向下一个节点
+    cut(head, slow);                     // 切成两个链表
+    return isEqual(head, reverse(slow));
 }
 
-// 反转链表
-private static ListNode reverse(ListNode head){
-    if(head == null) return null;
-    ListNode dummy = new ListNode(0);
-    dummy.next = head;
-    ListNode pre = dummy;
-    ListNode cur = pre.next;
-    while (cur.next != null){
-        ListNode nex = cur.next;
-        cur.next = nex.next;
-        nex.next = pre.next;
-        pre.next = nex;
+private void cut(ListNode head, ListNode cutNode) {
+    while (head.next != cutNode) {
+        head = head.next;
     }
-    return pre.next;
+    head.next = null;
+}
+
+private ListNode reverse(ListNode head) {
+    ListNode newHead = null;
+    while (head != null) {
+        ListNode nextNode = head.next;
+        head.next = newHead;
+        newHead = head;
+        head = nextNode;
+    }
+    return newHead;
+}
+
+private boolean isEqual(ListNode l1, ListNode l2) {
+    while (l1 != null && l2 != null) {
+        if (l1.val != l2.val) return false;
+        l1 = l1.next;
+        l2 = l2.next;
+    }
+    return true;
 }
 ```
 
@@ -3585,6 +3901,25 @@ public ListNode deleteDuplicates(ListNode head) {
         slow = fast;
     }
     return dummy.next;
+}
+```
+
+###### 删除排序链表中的重复元素
+
+**[题目83](https://leetcode-cn.com/problems/remove-duplicates-from-sorted-list/)**：给定一个排序链表，删除所有重复的元素，使得每个元素只出现一次。
+
+](https://leetcode.com/problems/remove-duplicates-from-sorted-list/description/)
+
+```html
+Given 1->1->2, return 1->2.
+Given 1->1->2->3->3, return 1->2->3.
+```
+
+```java
+public ListNode deleteDuplicates(ListNode head) {
+    if (head == null || head.next == null) return head;
+    head.next = deleteDuplicates(head.next);
+    return head.val == head.next.val ? head.next : head;
 }
 ```
 
@@ -3936,7 +4271,7 @@ public boolean isValid(String s) {
 
 📘 **公司**：字节
 
-**[题目](https://leetcode-cn.com/problems/daily-temperatures)**：根据每日 气温 列表，请重新生成一个列表，对应位置的输入是你需要再等待多久温度才会升高超过该日的天数。如果之后都不会升高，请在该位置用 0 来代替。例如，给定一个列表 temperatures = [73, 74, 75, 71, 69, 72, 76, 73]，你的输出应该是 [1, 1, 4, 2, 1, 1, 0, 0]。
+**[题目739](https://leetcode-cn.com/problems/daily-temperatures)**：根据每日 气温 列表，请重新生成一个列表，对应位置的输入是你需要再等待多久温度才会升高超过该日的天数。如果之后都不会升高，请在该位置用 0 来代替。例如，给定一个列表 temperatures = [73, 74, 75, 71, 69, 72, 76, 73]，你的输出应该是 [1, 1, 4, 2, 1, 1, 0, 0]。
 
 **题意**：一个数组，求对于每个元素，比它小的左边的第一个元素下标，输出一个数组。
 
@@ -3962,6 +4297,36 @@ public int[] dailyTemperatures(int[] temp) {
         stack.push(i);
     }
     return res;
+}
+```
+
+###### 循环数组中下一个更大的数字
+
+**[题目503](https://leetcode-cn.com/problems/next-greater-element-ii/)**：上一个题的升级版，与 739. Daily Temperatures (Medium) 不同的是，数组是循环数组，并且**最后要求的不是距离而是下一个元素**。
+
+```java
+输入: [1,2,1]  输出: [2,-1,2]  
+解释: 第一个 1 的下一个更大的数是 2；数字 2 找不到下一个更大的数；第二个 1 的下一个最大的数需要循环搜索，结果也是 2。
+```
+
+```java
+public int[] nextGreaterElements(int[] nums) {
+    int len = nums.length;
+    int[] next = new int[len];
+    // 全部置为-1
+    Arrays.fill(next, -1);
+
+    Stack<Integer> preStack = new Stack<>();
+    for (int i = 0; i < len * 2; i++) {
+        int num = nums[i % len];
+        while (!preStack.isEmpty() && nums[preStack.peek()] < num) {
+            next[preStack.pop()] = num;
+        }
+        if (i < len) {
+            preStack.push(i);
+        }
+    }
+    return next;
 }
 ```
 
@@ -4678,7 +5043,7 @@ public int dfs(TreeNode root) {
 
 ###### 路径总和（I、II、III）
 
-[**题目**](https://leetcode-cn.com/problems/path-sum/)：给定一个二叉树和一个目标和，判断该树中是否存在**根节点到叶子节点**的路径，这条路径上所有节点值相加等于目标和。
+[**题目112**](https://leetcode-cn.com/problems/path-sum/)：给定一个二叉树和一个目标和，判断该树中是否存在**根节点到叶子节点**的路径，这条路径上所有节点值相加等于目标和。
 
 ```java
 private boolean isFind = false;
@@ -4922,6 +5287,10 @@ public TreeNode buildTree(int inStart, int inEnd, int postStart, int postEnd) {
 }
 ```
 
+###### 有序链表构造平衡二叉搜索树
+
+**[题目109](给定一个单链表，其中的元素按升序排序，将其转换为高度平衡的二叉搜索树。)**：
+
 ###### 二叉树最大直径
 
 📘 **公司**：字节
@@ -5104,6 +5473,63 @@ public void flatten(TreeNode root) {
 }
 ```
 
+###### 镜像反转二叉树
+
+**[题目226](https://leetcode-cn.com/problems/invert-binary-tree/)**：翻转一棵二叉树。
+
+```java
+public TreeNode invertTree(TreeNode root) {
+    // Base case
+    if(root == null) {
+        return null;
+    }
+    invertTree(root.left);
+    invertTree(root.right);
+    // Swap
+    TreeNode temp = root.left;
+    root.left = root.right;
+    root.right = temp;
+    return root;
+}
+```
+
+###### 合并两棵二叉树
+
+[题目617](https://leetcode-cn.com/problems/merge-two-binary-trees/)：合并两棵二叉树。
+
+```java
+Input:
+       Tree 1                     Tree 2
+          1                         2
+         / \                       / \
+        3   2                     1   3
+       /                           \   \
+      5                             4   7
+
+Output:
+         3
+        / \
+       4   5
+      / \   \
+     5   4   7             
+```
+
+递归合并即可。
+
+```java
+public TreeNode mergeTrees(TreeNode t1, TreeNode t2) {
+    if (t1 == null && t2 == null) return null;
+    if (t1 == null) return t2;
+    if (t2 == null) return t1;
+    TreeNode root = new TreeNode(t1.val + t2.val);
+    root.left = mergeTrees(t1.left, t2.left);
+    root.right = mergeTrees(t1.right, t2.right);
+    return root;
+}
+```
+
+
+
 ###### 二叉树中所有距离为K的结点
 
 📘 **公司**：字节
@@ -5174,6 +5600,28 @@ public void dfs(TreeNode root, TreeNode parent) {
 
 用**层序遍历**判断每一层的节点个数是否满足要求。
 
+###### 对称二叉树
+
+**[题目101]()**：给定一个二叉树，检查它是否是镜像对称的。
+
+```java
+public boolean isSymmetric(TreeNode root) {
+    if (root == null) return true;
+    return isSymmetric(root.left, root.right);
+}
+
+private boolean isSymmetric(TreeNode t1, TreeNode t2) {
+    if (t1 == null && t2 == null) return true;
+    if (t1 == null || t2 == null) return false;
+    if (t1.val != t2.val) return false;
+    return isSymmetric(t1.left, t2.right) && isSymmetric(t1.right, t2.left);
+}
+```
+
+
+
+
+
 ##### 动态规划
 
 ###### 最长公共子序列(H)
@@ -5182,7 +5630,10 @@ public void dfs(TreeNode root, TreeNode parent) {
 
 **题目**：给定两个字符串 **text1** 和 **text2**，返回这两个字符串的**最长公共子序列的长度**。
 
-![image-20200813153938479](assets/image-20200813153938479.png)
+![image-20200813153938479](assets/image-20200813153938479.png)定义一个二维数组 dp 用来存储最长公共子序列的长度，其中 dp\[i][j] 表示 S1 的前 i 个字符与 S2 的前 j 个字符最长公共子序列的长度。考虑 S1<sub>i</sub> 与 S2<sub>j</sub> 值是否相等，分为两种情况：
+
+- **当 S1<sub>i</sub>==S2<sub>j</sub> 时**，那么就能在 S1 的前 i-1 个字符与 S2 的前 j-1 个字符最长公共子序列的基础上再加上 S1<sub>i</sub> 这个值，最长公共子序列长度加 1，即 **dp\[i][j] = dp\[i-1][j-1] + 1**。
+- **当 S1<sub>i</sub> != S2<sub>j</sub> 时**，此时最长公共子序列为 S1 的**前 i-1 个字符和 S2 的前 j 个字符**最长公共子序列，或者 S1 的**前 i 个字符和 S2 的前 j-1 个字符**最长公共子序列，取它们的最大者，即 **dp\[i][j] = max{ dp\[i-1][j], dp\[i][j-1] }**。
 
 ```java
 public int longestCommonSubsequence(String text1, String text2) {
@@ -5214,7 +5665,7 @@ public int longestCommonSubsequence(String text1, String text2) {
 解释: 最长的上升子序列是 [2,3,7,101]，它的长度是 4。
 ```
 
-**普通**：找最长递增子序列的**长度**。状态转移方程如下：
+**[普通300](https://leetcode-cn.com/problems/longest-increasing-subsequence/)**：找最长递增子序列的**长度**。状态转移方程如下：
 
 ```java
 dp[i] = max{1 + dp[j] for j < i if num[j] < num[i]}
@@ -5234,7 +5685,7 @@ public int lengthOfLIS(int[] nums) {
     Arrays.fill(dp, 1);
 
     for (int i = 1; i < len; i++) {
-        // 找到之前所有小于nums[i]的值中dp值最大的
+        // 挨着比较值的大小找到之前所有小于nums[i]的值中dp值最大的
         for (int j = 0; j < i; j++) {
             // 说明当前元素大于之前的值,可能带来增益
             if (nums[i] > nums[j]) {
@@ -5250,7 +5701,54 @@ public int lengthOfLIS(int[] nums) {
 }
 ```
 
-时间复杂度 O(N^2)。这里还可以**优化成二分**的，暂时不会写。
+时间复杂度 O(N^2)。这里还可以**优化成二分**的。定义一个 **tails 数组**，其中 tails[i] 存储长度为 i + 1 的最长递增子序列的最后一个元素。对于一个元素 x，
+
+- 如果它大于 tails 数组所有的值，那么把它添加到 tails 后面，表示最长递增子序列长度加 1；
+- 如果 tails[i-1] < x <= tails[i]，那么更新 tails[i] = x。
+
+例如对于数组 [4,3,6,5]，有：
+
+```html
+tails      len      num
+[]         0        4
+[4]        1        3
+[3]        1        6
+[3,6]      2        5
+[3,5]      2        null
+```
+
+可以看出 tails 数组保持有序，因此在查找 S<sub>i</sub> 位于 tails 数组的位置时就可以使用二分查找。
+
+```java
+public int lengthOfLIS(int[] nums) {
+    int n = nums.length;
+    int[] tails = new int[n];
+    int len = 0;
+    for (int num : nums) {
+        int index = binarySearch(tails, len, num);
+        tails[index] = num;
+        if (index == len) {
+            len++;
+        }
+    }
+    return len;
+}
+
+private int binarySearch(int[] tails, int len, int key) {
+    int l = 0, h = len;
+    while (l < h) {
+        int mid = l + (h - l) / 2;
+        if (tails[mid] == key) {
+            return mid;
+        } else if (tails[mid] > key) {
+            h = mid;
+        } else {
+            l = mid + 1;
+        }
+    }
+    return l;
+}
+```
 
 **升级**：返回这个**递增子序列**。
 
@@ -5303,11 +5801,70 @@ public List<List<Integer>> lengthOfLIS3(int[] nums) {
 
 类似题目：**套娃，信封嵌套，多米诺骨牌**。
 
+###### 一组整数对能够构成的最长链
+
+**[题目646](https://leetcode-cn.com/problems/maximum-length-of-pair-chain/)**：对于 (a, b) 和 (c, d) ，如果 b < c，则它们可以构成一条链。给定一个对数集合，找出能够形成的最长数对链的长度。
+
+跟上一题的代码几乎一样，只不过每次比较的是当前区间的开头和之前区间的结尾。
+
+```java
+public int findLongestChain(int[][] nums) {
+    if (nums == null || nums.length == 0) return 0;
+    // 按照数组第一个元素排序
+    Arrays.sort(nums, (a, b) -> (a[0] - b[0]));
+    int len = nums.length;
+    int[] dp = new int[len];
+    // 全部初始化为1
+    Arrays.fill(dp, 1);
+    int res = Integer.MIN_VALUE;
+    for (int i = 1; i < len; i++) {
+        // 依次从之前的里面序列里面找看能不能更新
+        for (int j = 0; j < i; j++) {
+            if (nums[j][1] < nums[i][0]) {
+                dp[i] = Math.max(dp[i], dp[j] + 1);
+            }
+            // 滚动更新res
+            res = Math.max(res, dp[i]);
+        }
+    }
+    return res;
+}
+```
+
+###### 最长摆动序列
+
+**[题目376](https://leetcode-cn.com/problems/wiggle-subsequence/)**：元素直接增减相隔的序列称为摆动序列。给定一个整数序列，返回作为摆动序列的最长子序列的长度。
+
+```
+输入: [1,7,4,9,2,5]  输出: 6  解释: 整个序列均为摆动序列。
+输入: [1,17,5,10,13,15,10,5,16,8]
+输出: 7   解释: 这个序列包含几个长度为 7 摆动序列，其中一个可为[1,17,10,13,10,16,8]。
+输入: [1,2,3,4,5,6,7,8,9]  输出: 2
+```
+
+```java
+public int wiggleMaxLength(int[] nums) {
+    if (nums == null || nums.length == 0) return 0;
+    // 记录上升与下降
+    int up = 1, down = 1;
+    for (int i = 1; i < nums.length; i++) {
+        // 当前在上升
+        if (nums[i] > nums[i - 1]) {
+            up = down + 1;
+            // 当前在下降
+        } else if (nums[i] < nums[i - 1]) {
+            down = up + 1;
+        }
+    }
+    return Math.max(up, down);
+}
+```
+
 ###### 数组最长数值连续序列
 
 📘 **公司**：字节
 
-**[题目](https://leetcode-cn.com/problems/longest-consecutive-sequence/)**：给定一个**未排序**的整数数组，找出最长连续序列的长度。
+**[题目128](https://leetcode-cn.com/problems/longest-consecutive-sequence/)**：给定一个**未排序**的整数数组，找出最长连续序列的长度。
 
 ```java
 输入: [100, 4, 200, 1, 3, 2] 输出: 4
@@ -5487,7 +6044,7 @@ private static void findMaxByCenter(String str, int left, int right) {
 
 📘 **公司**：字节
 
-**[题目](https://leetcode-cn.com/problems/palindromic-substrings/)**：给定一个字符串，你的任务是计算这个字符串中有多少个回文子串。
+**[题目647](https://leetcode-cn.com/problems/palindromic-substrings/)**：给定一个字符串，你的任务是计算这个字符串中有多少个回文子串。
 
 这个题直接用上题的**中心拓展法**即可，只是每次拓展的时候统计一下个数，只是稍作修改。
 
@@ -5512,6 +6069,8 @@ private void count(String str, int start, int end) {
     }
 }
 ```
+
+###### 最长回文子序列
 
 题目：与上题类似，不过**子序列不一定连续**。
 
@@ -5574,6 +6133,33 @@ public static int longestPalindromeSubseq(String str) {
         }
     }
     return dp[0][len - 1];
+}
+```
+
+###### 删除两个字符串的字符使它们相等
+
+**[题目583](https://leetcode-cn.com/problems/delete-operation-for-two-strings/)**：给定两个单词 word1 和 word2，找到使得 word1 和 word2 相同所需的最小步数，每步可以删除任意一个字符串中的一个字符。
+
+```
+输入: "sea", "eat"  输出: 2   解释: 第一步将"sea"变为"ea"，第二步将"eat"变为"ea"
+```
+
+可以转换为求两个字符串的**最长公共子序列**问题。
+
+```java
+public int minDistance(String word1, String word2) {
+    int m = word1.length(), n = word2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (word1.charAt(i - 1) == word2.charAt(j - 1)) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i][j - 1], dp[i - 1][j]);
+            }
+        }
+    }
+    return m + n - 2 * dp[m][n];
 }
 ```
 
@@ -5798,7 +6384,7 @@ dp[i][k][1] = max(dp[i-1][k][1], dp[i-1][k-1][0] - prices[i])
 
 ###### 打家劫舍系列问题
 
-**打家劫舍I**：一排房子，不能打劫相邻的房子，求最大收益。
+**[打家劫舍198](https://leetcode-cn.com/problems/house-robber/)**：一排房子，不能打劫相邻的房子，求最大收益。
 
 定义 **dp 数组**用来存储**最大的抢劫量**，其中 dp[i] 表示抢到**第 i 个住户时**的最大抢劫量。由于不能抢劫邻近住户，如果抢劫了**第 i -1** 个住户，那么就不能再抢劫**第 i 个**住户，所以
 
@@ -5821,7 +6407,21 @@ public int rob(int[] nums) {
 }
 ```
 
-**打家劫舍II**：题目跟上题一样，只不过条件改成**所有的房屋都围成一圈**。
+优化空间：
+
+```java
+public int rob2(int[] nums) {
+    int slow = 0, fast = 0;
+    for (int i = 0; i < nums.length; i++) {
+        int cur = Math.max(slow + nums[i], fast);
+        slow = fast;
+        fast = cur;
+    }
+    return fast;
+}
+```
+
+**[环形打家劫舍213](https://leetcode-cn.com/problems/house-robber-ii/)**：题目跟上题一样，只不过条件改成**所有的房屋都围成一圈**。
 
 **环状排列**意味着**第一个房子和最后一个房子**中只能**选择一个**偷窃，因此可以把此环状排列房间问题**约化为两个单排排列房间子问题**：
 
@@ -5887,7 +6487,11 @@ private int[] dfs(TreeNode node) {
 
 📘 **公司**：字节
 
-**[题目](https://leetcode-cn.com/problems/coin-change/)**：已知 k 种面值的硬币，面值分别为 c1, c2 ... ck，每种硬币的**数量无限**，再给一个总金额 amount，问**最少需要几枚硬币**凑出这个金额，如果不可能凑出，算法返回 -1 。比如说 k = 3，面值分别为 1，2，5，总金额 amount = 11。那么最少需要 3 枚硬币凑出，即 11 = 5 + 5 + 1。凑不出来返回 -1。
+**[题目](https://leetcode-cn.com/problems/coin-change/)**：已知 k 种面值的硬币，面值分别为 c1, c2 ... ck，每种硬币的**数量无限**，再给一个总金额 amount，问**最少需要几枚硬币**凑出这个金额，如果不可能凑出，算法返回 -1 。比如说 k = 3，面值分别为 1，2，5，总金额 amount = 11。那么最少需要 3 枚硬币凑出，即 11 = 5 + 5 + 1。凑不出来返回 -1。因为硬币可以重复使用，因此这是一个完全背包问题。完全背包只需要将 0-1 背包中逆序遍历 dp 数组改为正序遍历即可。
+
+- 物品：硬币
+- 物品大小：面额
+- 物品价值：数量
 
 **暴力递归法**：最好理解，但是时间会爆掉。
 
@@ -6034,6 +6638,21 @@ public int change2(int amount, int[] coins) {
 
 0-1背包：一个物品只能选1次，选或者不选。
 
+```java
+public int knapsack(int W, int N, int[] weights, int[] values) {
+    int[] dp = new int[W + 1];
+    for (int i = 1; i <= N; i++) {
+        int w = weights[i - 1], v = values[i - 1];
+        for (int j = W; j >= 1; j--) {
+            if (j >= w) {
+                dp[j] = Math.max(dp[j], dp[j - w] + v);
+            }
+        }
+    }
+    return dp[W];
+}
+```
+
 完全背包问题：每个物品可以选无限次。
 
 多重背包问题：每个物品选择的次数不同且有限制。
@@ -6044,7 +6663,117 @@ public int change2(int amount, int[] coins) {
 
 ###### 划分数组为和相等的两部分
 
-[**题目**](https://leetcode-cn.com/problems/partition-equal-subset-sum/)：
+[**题目416**](https://leetcode-cn.com/problems/partition-equal-subset-sum/)：给定一个只包含正整数的非空数组。是否可以将这个数组分割成**两个子集**，使得两个子集的**元素和相等**。
+
+```
+输入: [1, 5, 11, 5]  输出: true  解释: 数组可以分割成 [1, 5, 5] 和 [11].
+```
+
+可以看成一个背包大小为 **sum/2** 的 **0-1 背包问题**。
+
+等价转换：是否可以从输入数组中挑选出一些正整数，使得这些数的和 **等于** 整个数组元素的和的一半。所以数组的和一定得是偶数。物品一个一个选，容量也一点一点增加去考虑。
+
+画一个 len 行，target + 1 列的**表格**。这里 **len 是物品的个数**，**target 是背包的容量**。len 行表示一个一个物品考虑，target + 1 多出来的那 1 列，表示背包**容量从 0 开始**考虑。
+
+`dp[i][j]` 表示从数组的 `[0, i]` 这个子区间内挑选一些正整数，每个数只能用一次，使得这些数的和**恰好等于** `j`。
+
+```java
+public boolean canPartition(int[] nums) {
+    int sum = computeArraySum(nums);
+    if (sum % 2 != 0) {
+        return false;
+    }
+    int W = sum / 2;
+    boolean[] dp = new boolean[W + 1];
+    dp[0] = true;
+    for (int num : nums) {                 // 0-1 背包一个物品只能用一次
+        for (int i = W; i >= num; i--) {   // 从后往前，先计算 dp[i] 再计算 dp[i-num]
+            dp[i] = dp[i] || dp[i - num];
+        }
+    }
+    return dp[W];
+}
+
+private int computeArraySum(int[] nums) {
+    int sum = 0;
+    for (int num : nums) {
+        sum += num;
+    }
+    return sum;
+}
+```
+
+###### 改变一组数的正负号使得和为一给定数
+
+[494. Target Sum (Medium)](https://leetcode.com/problems/target-sum/description/)
+
+```html
+Input: nums is [1, 1, 1, 1, 1], S is 3.
+Output: 5
+Explanation:
+
+-1+1+1+1+1 = 3
++1-1+1+1+1 = 3
++1+1-1+1+1 = 3
++1+1+1-1+1 = 3
++1+1+1+1-1 = 3
+
+There are 5 ways to assign symbols to make the sum of nums be target 3.
+```
+
+该问题可以转换为 Subset Sum 问题，从而使用 0-1 背包的方法来求解。
+
+可以将这组数看成两部分，P 和 N，其中 P 使用正号，N 使用负号，有以下推导：
+
+```html
+                  sum(P) - sum(N) = target
+sum(P) + sum(N) + sum(P) - sum(N) = target + sum(P) + sum(N)
+                       2 * sum(P) = target + sum(nums)
+```
+
+因此只要找到一个子集，令它们都取正号，并且和等于 (target + sum(nums))/2，就证明存在解。
+
+```java
+public int findTargetSumWays(int[] nums, int S) {
+    int sum = computeArraySum(nums);
+    if (sum < S || (sum + S) % 2 == 1) {
+        return 0;
+    }
+    int W = (sum + S) / 2;
+    int[] dp = new int[W + 1];
+    dp[0] = 1;
+    for (int num : nums) {
+        for (int i = W; i >= num; i--) {
+            dp[i] = dp[i] + dp[i - num];
+        }
+    }
+    return dp[W];
+}
+
+private int computeArraySum(int[] nums) {
+    int sum = 0;
+    for (int num : nums) {
+        sum += num;
+    }
+    return sum;
+}
+```
+
+DFS 解法：
+
+```java
+public int findTargetSumWays(int[] nums, int S) {
+    return findTargetSumWays(nums, 0, S);
+}
+
+private int findTargetSumWays(int[] nums, int start, int S) {
+    if (start == nums.length) {
+        return S == 0 ? 1 : 0;
+    }
+    return findTargetSumWays(nums, start + 1, S + nums[start])
+            + findTargetSumWays(nums, start + 1, S - nums[start]);
+}
+```
 
 ###### 括号生成(H)
 
@@ -6101,14 +6830,16 @@ private void dfs(String tempStr, int left, int right) {
 
 **假设两人都很聪明**，设计一个算法，返回**先手和后手的最后得分（石头总数）之差**。比如上面先手能获得 4 分，后手会获得 100 分，应该返回 -96。
 
-###### 剪绳子
+###### 整数拆分/剪绳子
 
 📘 **公司**：字节
+
+**[题目343](https://leetcode-cn.com/problems/integer-break/)**：给定一个正整数 n，将其拆分为至少两个正整数的和，并使这些整数的乘积最大化。 返回你可以获得的最大乘积。
 
 **题解：**每次剪一刀之后，剩余部分还可以继续剪，那么就是**计算出所有可能的情况，取最大值**。自底向上改善递归从上而下重复计算的问题。
 
 ```java
-public int cutRope(int target) {
+public int integerBreak(int target) {
     if(target == 2) return 1;
     if(target == 3) return 2;
     if(target == 4) return 4;
@@ -6268,7 +6999,7 @@ public int maximalSquare(char[][] matrix) {
 
 ###### 完全平方数
 
-**[题目](https://leetcode-cn.com/problems/perfect-squares/)**：给定正整数 n，找到若干个完全平方数（比如 1, 4, 9, 16, ...）使得它们的和等于 n。你需要让组成和的完全平方数的**个数最少**。
+**[题目279](https://leetcode-cn.com/problems/perfect-squares/)**：给定正整数 n，找到若干个完全平方数（比如 1, 4, 9, 16, ...）使得它们的和等于 n。你需要让组成和的完全平方数的**个数最少**。
 
 ```
 输入: n = 13    输出: 2   解释: 13 = 4 + 9.
@@ -6305,9 +7036,176 @@ public int numSquares(int num) {
 }
 ```
 
+###### 矩阵最小路径和
 
+**[题目64](https://leetcode-cn.com/problems/minimum-path-sum/)**：给定一个包含非负整数的 m x n 网格，请找出一条从左上角到右下角的路径，使得路径上的数字总和为最小。说明：每次只能**向下或者向右移动一步**。
 
+```java
+public int minPathSum(int[][] grid) {
+    int m = grid.length;
+    int n = grid[0].length;
+    if (m == 0 || n == 0) return 0;
 
+    int[][] dp = new int[m][n];
+    // 初始化第一行第一列
+    dp[0][0] = grid[0][0];
+    for (int i = 1; i < m; i++) {
+        dp[i][0] = dp[i - 1][0] + grid[i][0];
+    }
+    for (int j = 1; j < n; j++) {
+        dp[0][j] = dp[0][j - 1] + grid[0][j];
+    }
+    for (int i = 1; i < m; i++) {
+        for (int j = 1; j < n; j++) {
+            dp[i][j] = Math.min(dp[i - 1][j], dp[i][j - 1]) + grid[i][j];
+        }
+    }
+    return dp[m - 1][n - 1];
+}
+```
+
+###### 矩阵的总路径数
+
+**[题目62](https://leetcode-cn.com/problems/unique-paths/)**：统计从矩阵左上角到右下角的路径总数，每次只能向右或者向下移动。
+
+```java
+public int uniquePaths(int m, int n) {
+    int[][] dp = new int[m][n];
+    for (int i = 0; i < n; i++) dp[0][i] = 1;
+    for (int i = 0; i < m; i++) dp[i][0] = 1;
+    for (int i = 1; i < m; i++) {
+        for (int j = 1; j < n; j++) {
+            // 等于上方加左边的和
+            dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+        }
+    }
+    return dp[m - 1][n - 1];
+}
+```
+
+优化空间成 1 维。
+
+```java
+public int uniquePaths(int m, int n) {
+
+    int[] res = new int[n];
+    Arrays.fill(res, 1);
+    for (int i = 1; i < m; i++) {
+        for (int j = 1; j < n; j++) {
+            res[j] += res[j - 1];
+        }
+    }
+    return res[n - 1];
+}
+```
+
+###### 数组中等差递增子区间的个数
+
+**[题目413](https://leetcode-cn.com/problems/arithmetic-slices/)**：返回数组 A 中所有为等差数组的子数组个数。
+
+```java
+A = [0, 1, 2, 3, 4]
+return: 6, for 3 arithmetic slices in A:
+[0, 1, 2],
+[1, 2, 3],
+[0, 1, 2, 3],
+[0, 1, 2, 3, 4],
+[ 1, 2, 3, 4],
+[2, 3, 4]
+```
+
+dp[i] 表示以 A[i] 为结尾的**等差递增子区间的个数**。
+
+当 **A[i] - A[i-1] == A[i-1] - A[i-2]**，那么 [A[i-2], A[i-1], A[i]] **构成一个**等差递增子区间。而且在以 A[i-1] 为结尾的递增子区间的后面**再加上一个 A[i]**，一样可以构成新的递增子区间。
+
+```html
+dp[2] = 1
+    [0, 1, 2]
+dp[3] = dp[2] + 1 = 2
+    [0, 1, 2, 3], // [0, 1, 2] 之后加一个 3
+    [1, 2, 3]     // 新的递增子区间
+dp[4] = dp[3] + 1 = 3
+    [0, 1, 2, 3, 4], // [0, 1, 2, 3] 之后加一个 4
+    [1, 2, 3, 4],    // [1, 2, 3] 之后加一个 4
+    [2, 3, 4]        // 新的递增子区间
+```
+
+综上，**在 A[i] - A[i-1] == A[i-1] - A[i-2] 时，dp[i] = dp[i-1] + 1**。
+
+因为递增子区间不一定以最后一个元素为结尾，可以是**任意一个元素结尾**，因此**需要返回 dp 数组累加的结果**。
+
+```java
+public int numberOfArithmeticSlices(int[] A) {
+    if (A == null || A.length == 0) return 0;
+
+    int len = A.length;
+    int[] dp = new int[len];
+    for (int i = 2; i < len; i++) {
+        // 如果满足转移方程条件
+        if (A[i] - A[i - 1] == A[i - 1] - A[i - 2]) {
+            dp[i] = dp[i - 1] + 1;
+        }
+    }
+    // 计算所有位置的累加和
+    int total = 0;
+    for (int cnt : dp) {
+        total = total + cnt;
+    }
+    return total;
+}
+```
+
+###### 数字字符串解码为字母字符串
+
+**[题目91](https://leetcode-cn.com/problems/decode-ways/)**：给定一个只包含数字的**非空**字符串，请计算**解码方法的总数**。
+
+```
+输入: "226"   输出: 3
+解释: 它可以解码为 "BZ" (2 26), "VF" (22 6), 或者 "BBF" (2 2 6) 。
+```
+
+假设之前的字符串是 abcx，现在新加入了 y，则有**以下 5 种**情况：
+
+- 如果 **x\=='0'，且 y=='0'**，无法解码，返回 0；
+- 如果只有 x \== '0'，则 y 只能**单独放在最后**，不能与 x 合并(不能以 0 开头)，此时有：**dp[i] = dp[i - 1]**。
+- 如果只有 y \== '0'，则 y **不能单独放置**，必须与前面的 x **合并**，并且如果合并结果大于 26，返回 0，否则有：
+    **dp[i] = dp[i - 2]**。
+- 如果 **xy<=26**：则 y 可以“单独”放在 abcx 的每个解码结果后后，并且如果 abcx 以 x 单独结尾，此时可以**合并** xy 作为结尾，而这种解码种数就是 abc 的解码结果，此时有：**dp[i+1] = dp[i] + dp[i-1]**（类似爬楼梯方法数）。
+- 如果 xy > 26：此时 x 又不能与 y 合并，y 只能单独放在 dp[i] 的每一种情况的最后，此时有：dp[i+1] = dp[i]。
+
+```java
+public int numDecodings2(String str) {
+    char[] nums = str.toCharArray();
+    int[] dp = new int[str.length() + 1];
+    // 初始化dp
+    dp[0] = 1;
+    dp[1] = nums[0] == '0' ? 0 : 1;
+    if (str.length() <= 1) return dp[1];
+
+    for (int i = 2; i <= str.length(); i++) {
+        // 一来就计算当前位置的前两个字符能否解析
+        int two = Integer.parseInt(str.substring(i - 2, i));
+        // 前面两个字符为"00"直接返回0
+        if (two == 0) {
+            return 0;
+            // 到这说明最多只有一个字符为0
+            // 第i-2个字符为0,则它只能与前面的组合解析
+        } else if (str.charAt(i - 2) == '0') {
+            dp[i] = dp[i - 1];
+            // 第i-1个字符为0,则它自己只能与前两个位置组合
+        } else if (nums[i - 1] == '0') {
+            if (two > 26) return 0;
+            dp[i] = dp[i - 2];
+        } else if (two > 26) {
+            dp[i] = dp[i - 1];
+        } else {
+            // 否则就类似于爬楼梯的方法数一样是前面情况的和
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+    }
+    return dp[dp.length - 1];
+}
+```
 
 
 
@@ -6412,7 +7310,7 @@ for (int i = 0; i < str.length(); i++) {
 
 📘 **公司**：字节
 
-这里用 O(1) 的空间实现。**先分别把两个子串内容逆序，然后再把整个子串进行逆序即可**。
+这里用 O(1) 的空间实现。**先分别把两个子串内容逆序，然后再把整个子串进行逆序即可**。例如将 abcd123 中的 abcd 和 123 单独翻转，得到 dcba321，然后对整个字符串进行翻转，得到 123abcd。
 
 ###### 中文数字转阿拉伯数字
 
@@ -6622,25 +7520,21 @@ public static boolean isSamiliarStr(String str1, String sr2) {
 
 **[题目](https://leetcode-cn.com/problems/valid-anagram/submissions/)**：如果两个字符串组成的**字符相同，仅仅是字符位置不同**，则称为换位字符串。
 
-**空间换时间**，使用 256 个 ASCII 码空间来记录字符的个数。
+**空间换时间**，使用 **256** 个 ASCII 码空间来记录字符的个数。
 
 ```java
-public static boolean isAnagram(String str1, String str2) {
-    if(str1 == null && str2 == null) return true;
-    if ((str1 == null && str2 != null) || (str1 != null && str2 == null)) return false;
-    // 记录字符数量的数组
-    int[] cnt = new int[256];
-    // 记录数量
-    for (int i = 0; i < str1.length(); i++) {
-        cnt[(int) str1.charAt(i)]++;
+public boolean isAnagram(String s, String t) {
+    int[] cnts = new int[26];
+    for (char c : s.toCharArray()) {
+        cnts[c - 'a']++;
     }
-    // 减少数量
-    for (int i = 0; i < str2.length(); i++) {
-        cnt[(int) str2.charAt(i)]--;
+    for (char c : t.toCharArray()) {
+        cnts[c - 'a']--;
     }
-    // 只要有一个位置不为0则为false
-    for (int i = 0; i < cnt.length; i++) {
-        if (cnt[i] != 0) return false;
+    for (int cnt : cnts) {
+        if (cnt != 0) {
+            return false;
+        }
     }
     return true;
 }
@@ -6648,9 +7542,49 @@ public static boolean isAnagram(String str1, String str2) {
 
 **延伸**：用上面的方法可以用于判断一个字符串是否**包含**另一个字符串的全部内容。先找到较长的字符串，然后使用数组统计字符个数，之后遍历较短的字符串，相应位置字符串减一，最后看计数数组中有没有**负数**，如果有则说明不包含。
 
+###### 给定字符组成最大回文串
+
+**[题目409](https://leetcode-cn.com/problems/longest-palindrome/)**：给定一个包含大写字母和小写字母的字符串，找到通过这些给定字母构造成的最长的回文串。
+
+```
+输入: "abccccdd"  输出: 7  解释: 以构造的最长的回文串是"dccaccd", 它的长度是 7。
+```
+
+使用长度为 **256 的整型数组**来统计每个字符出现的个数，每个字符有**偶数**个可以用来构成回文字符串。
+
+因为回文字符串最中间的那个字符**可以单独出现**，所以如果有**单独的字符**就把它放到最中间。
+
+```java
+public int longestPalindrome(String str) {
+    // 统计每个字符出现次数
+    int[] cnts = new int[256];
+    for (char c : str.toCharArray()) {
+        cnts[c]++;
+    }
+    int res = 0;
+    for (int cnt : cnts) {
+        // 排除掉奇数次的情况
+        res = res + (cnt / 2) * 2;
+    }
+    // 这个条件下str中一定有单个未使用的字符存在，可以把这个字符放到回文的最中间
+    if (res < str.length()) {
+        res++;
+    }
+    return res;
+}
+```
+
+
+
+
+
 ##### 数学相关题目
 
-###### 最大公约数
+###### 素数分解
+
+每一个数都可以分解成素数的乘积，例如 84 = 2<sup>2</sup> \* 3<sup>1</sup> \* 5<sup>0</sup> \* 7<sup>1</sup> \* 11<sup>0</sup> \* 13<sup>0</sup> \* 17<sup>0</sup> \* …
+
+###### 最大公约数与最小公倍数
 
 📘 **公司**：字节
 
@@ -6663,6 +7597,14 @@ public int gcd(int m, int n) {
 ```
 
 **N 个数的最大公约数**，直接求出前两个的最大公约数，然后以此为结果与下一个数求最大公约数，依次计算即可。
+
+最小公倍数为两数的乘积除以最大公约数。
+
+```java
+int lcm(int a, int b) {
+    return a * b / gcd(a, b);
+}
+```
 
 ###### 一个数的全部质因数
 
@@ -6696,7 +7638,7 @@ public static List<Integer> getNum(int num) {
 }
 ```
 
-###### 求平方根
+###### 求平方根(H)
 
 📘 **公司**：字节(2)、猿辅导
 
@@ -6891,6 +7833,87 @@ public int trailingZeroes(int num) {
 }
 ```
 
+###### 小于N的素数个数
+
+**[题目204](https://leetcode-cn.com/problems/count-primes/)**：统计所有小于非负整数 n 的质数的数量。
+
+埃拉托斯特尼筛法在**每次找到一个素数**时，**将能被素数整除的数排除掉**。
+
+```java
+public int countPrimes(int n) {
+    // 使用一个数组记录是否是素数
+    boolean[] notPrimes = new boolean[n + 1];
+    int count = 0;
+    for (int i = 2; i < n; i++) {
+        if (notPrimes[i]) {
+            continue;
+        }
+        count++;
+        // 从 i * i 开始，因为如果 k < i，那么 k * i 在之前就已经被去除过了
+        for (long j = (long) (i) * i; j < n; j += i) {
+            notPrimes[(int) j] = true;
+        }
+    }
+    return count;
+}
+```
+
+###### 七进制数
+
+**[题目504](https://leetcode-cn.com/problems/base-7/)**：给定一个整数，将其转化为7进制，并以字符串形式输出。
+
+](https://leetcode.com/problems/base-7/description/)
+
+```java
+public String convertToBase7(int num) {
+    if (num == 0) {
+        return "0";
+    }
+    StringBuilder sb = new StringBuilder();
+    boolean isNegative = num < 0;
+    if (isNegative) {
+        num = -num;
+    }
+    while (num > 0) {
+        sb.append(num % 7);
+        num /= 7;
+    }
+    String ret = sb.reverse().toString();
+    return isNegative ? "-" + ret : ret;
+}
+```
+
+Java 中 static String toString(int num, int radix) 可以将一个整数转换为 radix 进制表示的字符串。
+
+```java
+public String convertToBase7(int num) {
+    return Integer.toString(num, 7);
+}
+```
+
+###### 判断一个整数是否是回文数
+
+**[题目9](https://leetcode-cn.com/problems/palindrome-number/)**：判断一个整数是否是回文数。要求不能使用额外空间，也就不能将整数转换为字符串进行判断。
+
+将整数分成左右两部分，右边那部分需要转置，然后判断这两部分是否相等。
+
+```java
+public boolean isPalindrome(int num) {
+    if (num == 0) {
+        return true;
+    }
+    if (num < 0 || num % 10 == 0) {
+        return false;
+    }
+    int right = 0;
+    while (num > right) {
+        right = right * 10 + num % 10;
+        num = num / 10;
+    }
+    return num == right || num == right / 10;
+}
+```
+
 
 
 ##### 位运算
@@ -6917,9 +7940,9 @@ a = a ^ b;
 
 - 比如：a = 4 = 100，b = 3 = 011，a^b = c = 111
 
-a 异或 c 的结果就是 b，比如：a = 4 = 100，c = 111，a^c = 011 = 3 = b
+a 异或 c 的结果就是 b，比如：a = 4 = 100，c = 111，a^c = 011 = 3 = b。
 
-b 异或 c 的结果就是 a，比如：b = 3 = 011，c = 111，b^c = 100 = 4 = a
+b 异或 c 的结果就是 a，比如：b = 3 = 011，c = 111，b^c = 100 = 4 = a。
 
 ###### 二进制中1的个数
 
@@ -7078,7 +8101,7 @@ public int[] countBits(int num) {
 
 ###### 总结
 
-**位图 BitMap**。位图是以 **bit 位**为单位进行数据存储，这样每个字节 8 个位就可以表示 8 个数字，普通的一个 int 占 4 个字节即 32 位，用了位图之后可以将**空间节省 32 倍**。求解**数据重复**的问题，一般首先考虑**位图法**，比如找出没有出现的数、找出出现两次的数、找出不重复的电话号码。
+**位图 BitMap**。位图是以 **bit 位**为单位进行数据存储，这样每个字节 8 个位就可以表示 8 个数字，普通的一个 int 占 4 个字节即 32 位，用了位图之后可以将**空间节省 32 倍**。求解**数据重复**的问题，一般首先考虑**位图法**，比如找出没有出现的数、找出**出现两次**的数、找出**不重复**的电话号码。
 
 **分治法**：将大文件**求哈希**进行分别计算，最后统一计算即可。
 
@@ -7157,7 +8180,7 @@ public int[] countBits(int num) {
 
 即 0 ~ 15 ，16 ~ 31，32 ~ 47，......（总共 2**56M** 个)。
 
-此时我们有 256M个区间，大小总共为256M * 64bit = 2G内存。
+此时有 256M 个区间，大小总共为 256M * 64bit = 2G 内存。
 
 第四步：遍历 10G 个整数。每读取一个整数就将此**整数对应的区间+1**。
 
@@ -7605,6 +8628,12 @@ public static void merge(int[] array, int left, int mid, int right) {
 题目：高考成绩 2000 万数据，分数 0 - 750，问如何快速知道任一分数排名。
 
 **使用桶排序**。
+
+###### 堆排序
+
+📘 **公司**：滴滴
+
+撸一个堆排序。
 
 ##### 贪心题目
 

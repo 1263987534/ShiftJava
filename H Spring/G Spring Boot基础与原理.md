@@ -76,11 +76,11 @@ public class HelloApplication {
 public @interface SpringBootApplication {
 ```
 
-@**SpringBootConfiguration**：表示这是一个 Spring Boot 的配置类。
+@**SpringBootConfiguration**：表示这是一个 Spring Boot 的**配置类**。
 
 @**Configuration**：表示这是一个普通的**配置类**；配置类也是容器中的一个组件。
 
-@**EnableAutoConfiguration**：开启自动配置功能。
+@**EnableAutoConfiguration**：开启**自动配置**功能。
 
 ```java
 @AutoConfigurationPackage
@@ -94,7 +94,7 @@ public @interface EnableAutoConfiguration {
 
 @**Import**(EnableAutoConfigurationImportSelector.class)；
 
-**EnableAutoConfigurationImportSelector**：是导入哪些组件的选择器，将所有需要导入的组件以全类名的方式返回，这些组件就会被添加到容器中，会给容器中导入非常多的**自动配置类（xxxAutoConfiguration）**；就是给容器中导入这个场景需要的所有组件，并配置好这些组件；
+**EnableAutoConfigurationImportSelector**：是**导入哪些组件的选择器**，将所有需要导入的组件以全类名的方式返回，这些组件就会被添加到容器中，会给容器中导入非常多的**自动配置类（xxxAutoConfiguration）**；就是给容器中导入这个场景需要的所有组件，并配置好这些组件。
 
 ![自动配置类](assets/搜狗截图20180129224104.png)
 
@@ -104,7 +104,7 @@ public @interface EnableAutoConfiguration {
 SpringFactoriesLoader.loadFactoryNames(EnableAutoConfiguration.class, classLoader)；
 ```
 
-==Spring Boot 在启动的时候从**类路径下的 META-INF/spring.factories 中获取 EnableAutoConfiguration 指定的值**，将这些**值作为自动配置类**导入到容器中，自动配置类就生效，进行自动配置工作；==J2EE 的整体整合解决方案和自动配置都在 spring-boot-autoconfigure-1.5.9.RELEASE.jar 中。
+==Spring Boot 在启动的时候从**类路径下的 META-INF/spring.factories 中获取 EnableAutoConfiguration 指定的值**，将这些**值作为自动配置类**导入到容器中，自动配置类就生效，进行自动配置工作；==J2EE 的整体整合解决方案和自动配置都在 **spring-boot-autoconfigure-1.5.9.RELEASE.jar** 中。
 
 ###### (4) 项目结构
 

@@ -89,7 +89,7 @@ Thread Name= 9 formatter = yy-M-d ah:mm
 
 ###### (2) 随机数
 
-**Random** 类是线程**安全**的，但是多线程使用会存在**竞争问题**，性能会下降，所以提供了 **ThreadLocalRandom** 类，它是 Random 的子类，利用了 ThreadLocal，它没有 public 的构造方法，通过**静态**方法 current 获取对象。如：
+**Random** 类是线程**安全**的，但是**多线程**使用会存在**竞争问题**，性能会下降，所以提供了 **ThreadLocalRandom** 类，它是 Random 的子类，利用了 ThreadLocal，它没有 public 的构造方法，通过**静态**方法 current 获取对象。如：
 
 ```java
 public static void main(String[] args) {
@@ -170,7 +170,7 @@ ThreadLocalMap 类结构及其成员 Entry 定义如下：
 
 <img src="assets/image-20200531150709588.png" alt="image-20200531150709588" style="zoom:90%;" />
 
-即每个 Entry 对象都有一个 ThreadLocal 的弱引用作为 key，这是为了==**防止内存泄露**==。一旦线程结束，key变为一个**不可达**的对象，这个 Entry 就可以被 GC 了。在一些场景 (尤其是**使用线程池**) 下容易造成内存泄露问题，需要养成手动 remove 的习惯。
+即每个 Entry 对象都有一个 ThreadLocal 的弱引用作为 key，这是为了==**防止内存泄露**==。一旦线程结束，key 变为一个**不可达**的对象，这个 Entry 就可以被 GC 了。在一些场景 (尤其是**使用线程池**) 下容易造成内存泄露问题，需要养成手动 remove 的习惯。
 
 **ThreadLocalMap** 是 ThreadLocal 的**静态内部类**。
 

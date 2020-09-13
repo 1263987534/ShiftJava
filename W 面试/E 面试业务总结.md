@@ -161,7 +161,7 @@ protected void finalize() throws Throwable { }
 
 ###### equals()
 
-用来检查一个对象与调用这个 equals() 的这个对象**是否相等**。Object 类**默认**的 eqauls() 函数进行比较的依据是：调用它的对象和传入的对象的**引用**是否相等，默认进行的是**引用比较**。
+用来检查一个对象与调用这个 。() 的这个对象**是否相等**。Object 类**默认**的 eqauls() 函数进行比较的依据是：调用它的对象和传入的对象的**引用**是否相等，默认进行的是**引用比较**。
 
 **对于引用类型，== 判断两个变量是否引用==同一个==对象，而 equals() 判断两个对象内容是否==等价==。**
 
@@ -721,6 +721,32 @@ private transient volatile int sizeCtl;
 
 ###### BlockingQueue
 
+BlockingQueue 是一个**接口**，继承了 Queue 接口。内部多基于 **ReentrantLock 和 Condition**（Condition 只能在**独占模式**使用）实现。阻塞队列是**线程安全**的。 
+
+阻塞队列（BlockingQueue）是一个支持**两个附加操作**的队列。这两个附加的操作是： 
+
+- 在队列**空**时，**获取元素**的**线程会等待队列**变为非空。 
+- 当队列**满**时，**存储元素**的**线程会等待队列**可用。 
+
+提供了**阻塞的 take() 和 put() 方法**：如果队列为空 take() 将**阻塞**，**直到**队列中有内容；如果队列为满 put() 将**阻塞**，直到队列有空闲位置。
+
+<img src="../A Java/assets/1582800480656.png" alt="1582800480656" style="zoom:47%;" />
+
+**用途：** 阻塞队列常用于**生产者和消费者**的场景，生产者是往队列里添加元素的线程，消费者是从队列里拿元素的线程。阻塞队列就是生产者存放元素的**容器**，而消费者也**只从容器里拿元素**。
+
+| operation | Throws Exception | Special Value | Blocks |          Times Out          |
+| :-------: | :--------------: | :-----------: | :----: | :-------------------------: |
+|  Insert   |      add(o)      |   offer(o)    | put(o) | offer(o, timeout, timeunit) |
+|  Remove   |    remove(o)     |    poll()     | take() |   poll(timeout, timeunit)   |
+|  Examine  |    element()     |    peek()     |        |                             |
+
+BlockingQueue 接口有众多**实现类**，如下所示。
+
+- **ArrayBlockingQueue**：由数组支持的**有界队列**。一旦初始化容量之后便不可扩容。
+- **LinkedBlockingQueue**：由链接节点支持的可选有界队列。边界是可配置的，如果没有配置就是无边界的。
+- **PriorityBlockingQueue**：由优先级堆支持的无界优先级队列。
+- **DelayQueue**：由优先级堆支持的、基于时间的调度队列。
+
 ##### 16. 并发
 
 ###### 多线程基础
@@ -1012,9 +1038,11 @@ synchronized 对应的**内存间交互**操作为：**lock 和 unlock**，在**
 
 **synchronized同步语句块**：反编译后发现 **synchronized 同步语句块的实现使用的是 monitorenter 和 monitorexit 指令，其中 monitorenter 指令指向同步代码块的开始位置，monitorexit 指令则指明同步代码块的结束位置**。当执行 monitorenter 指令时，线程试图**获取锁**也就是获取 **monitor**(monitor 对象存在于每个 Java 对象的**对象头**中，synchronized 锁便是通过这种方式获取锁的，也是为什么 **Java 中任意对象可以作为锁**的原因) 的持有权。当计数器为 0 则可以**成功获取**，获取后将**锁计数器**设为 1 也就是加 1。相应的在执行 **monitorexit** 指令后，将**锁计数器设为 0**，表明锁被释放。如果获取对象锁失败，那当前线程就要阻塞等待，直到锁被另外一个线程释放为止。如果有**可重入**的情况，锁计数器会持续**增加**。
 
+**虚拟机规范要求，在执行 monitorenter 指令时，首先尝试获取对象的锁。如果对象没有被锁定或者当前线程已经拥有了那么对象的锁，把锁的计数器加 1，执行 monitorexit 时，将锁计数减 1，当锁计数器为 0 时，锁被释放。如果获取对象锁失败，当前线程将阻塞等待。**
+
 **synchronized修饰普通方法**：反编译后发现 synchronized 修饰的方法并**没有** monitorenter 指令和 monitorexit 指令，取得代之的是 **==ACC_SYNCHRONIZED==** 标识，该标识指明了该方法是一个**同步方法**（要看到这个标识，javap 指令必须**加 -v 参数**，不然显示不完全），JVM 通过该 **ACC_SYNCHRONIZED 访问标志**来辨别一个方法是否声明为同步方法，从而执行相应的同步调用。
 
-**synchronized修饰静态方法**：这与修饰同步语句块类似，只不过这里获取的是 Class 对象的 monitor 锁。
+**synchronized修饰静态方法**：这与修饰**同步语句块**类似，只不过这里获取的是 Class 对象的 monitor 锁。
 
 > **Monitor对象**
 
@@ -1042,7 +1070,7 @@ synchronized 对应的**内存间交互**操作为：**lock 和 unlock**，在**
 
 **锁粗化**：如果一系列的连续操作都对**同一个对象**反复加锁和解锁，**频繁的加锁操作就会导致性能损耗**。如 StringBuffer。如果虚拟机探测到由这样的一串零碎的操作都对**同一个对象**加锁，将会把**==加锁的范围扩展==（粗化）**到**整个操作序列**的**外部**，这样只需要**加锁一次**就可以了。
 
-**锁消除**：锁消除是指对于被检测出**不可能存在竞争**的**共享数据**的**锁进行消除**。**锁消除**主要是通过**逃逸分析**来决策支持的，如果**堆上**的共享数据**不可能逃逸**出去被其它线程访问到，那么就可以把它们当成**私有数据**对待，也就可以将它们的锁进行消除。比如 String 类的**拼接**。
+**锁消除**：锁消除是指对于被检测出**不可能存在竞争**的**共享数据**的**锁进行消除**。**锁消除**主要是通过**==逃逸分析==**来决策支持的，如果**堆上**的共享数据**不可能逃逸**出去被其它线程访问到，那么就可以把它们当成**私有数据**对待，也就可以将它们的锁进行消除。比如 String 类的**拼接**。
 
 **锁升级过程**：JDK1.6 引入了**偏向锁和轻量级锁**，从而让锁拥有了**四个状态**：**无锁状态（unlocked）、偏向锁状态（biasble）、轻量级锁状态（lightweight locked）和重量级锁状态（inflated）**。这些状态被保持在**对象头**的 **Mark Word** 中。其中 tag bits 对应了**五个状态**，这些状态在右侧的锁标志位中给出。几种锁会随着**竞争的激烈而逐渐升级**，注意锁**可以升级不可降级**，这种策略是为了提高获得锁和释放锁的效率。
 
@@ -1068,46 +1096,821 @@ try {
 }
 ```
 
+Lock 接口源码如下。
+
+```java
+// 获取锁。如果锁不可用，出于线程调度目的，将禁用当前线程，并且在获得锁之前，该线程将一直处于休眠状态
+void lock();
+
+// 如果当前线程未被中断，则获取锁。
+void lockInterruptibly();
+
+// 返回绑定到此Lock实例的新Condition实例。
+Condition newCondition();
+
+// 仅在调用时锁为空闲状态才获取该锁。如果锁可用，则获取锁，并立即返回值true。如果锁不可用，则此方法将立即返回值false。
+boolean tryLock();
+
+// 如果锁在给定的等待时间内空闲，并且当前线程未被中断，则获取锁。
+boolean	tryLock(long time, TimeUnit unit); 
+
+// 释放锁。在等待条件前，锁必须由当前线程保持。调用 Condition.await() 将在等待前以原子方式释放锁，并在等待返回前重新获取锁。
+void unlock(); 
+```
+
+Lock 接口有三个**实现类**分别是 ==**ReentrantLock**,  **ReentrantReadWriteLock.ReadLock, ReentrantReadWriteLock.WriteLock**==。如下图所示。
+
+<img src="assets/1582715870763.png" alt="1582715870763" style="zoom:49%;" />
+
 > **lock和tryLock的区别**
 
 - lock 拿不到锁会一直等待。tryLock 是去尝试，拿不到就返回 false，拿到返回 true。
 - tryLock 是可以被中断的，lock 不可以。
 
+> **ReentrantLock基础**
 
+**ReentrantLock** 是 JUC 包中的一个**可重入的互斥锁**。**ReentrantLock **和 **synchronized** 在基本用法，行为语义上都是类似的，同样都具有**可重入性**。只不过 ReentrantLock 增加了一些**高级的扩展功能**，比如它可以实现**公平锁，**同时可以绑定**多个 Conditon**。
+
+**(1) 可重入性**：可以支持一个线程对锁的重复获取，synchronized 与 ReentrantLock 都是可重入的。已经获取到锁的线程，能够**再次调用** lock() 方法获取锁而不被阻塞。
+
+**(2) 公平锁/非公平锁**：synchronized 是**非公平锁**， ReentrantLock 默认也是非公平的，但是可以通过带 boolean 参数（**fair** 参数）的构造方法**指定使用公平锁**，但**非公平锁的性能一般要优于公平锁**。
+
+> **ReentrantLock源码解析**
+
+```java
+// 内部实例
+private final Sync sync;
+
+// 无参构造器默认为非公平锁
+public ReentrantLock() {
+    sync = new NonfairSync();
+}
+
+// fair为true，公平锁；反之，非公平锁
+public ReentrantLock(boolean fair) {
+    // 根据fair参数决定初始化哪个同步组件
+    sync = fair ? new FairSync() : new NonfairSync();
+}
+```
+
+ReentrantLock 的抽象静态内部类 **Sync** 继承了 **AQS**，其子类分为**公平**锁 **FairSync** 和**非公平**锁 **NonfairSync**。此处可以指定是否采用公平锁，**FailSync 和 NonFailSync 亦为 Reentrantlock 的静态内部类，都继承于 Sync**。
+
+- 公平锁：线程获取锁的顺序和调用 lock 的顺序一样，**FIFO**。
+- 非公平锁：线程获取锁的顺序和调用 lock 的**顺序无关**。
+
+<img src="assets/image-20200509091238115.png" alt="image-20200509091238115" style="zoom:57%;" />
+
+**基本方法**：
+
+**lock()**：Sync 的 lock 方法是**抽象**的，实际的 lock 会**代理到 FairSync 或是 NonFairSync 上**（根据用户的选择来决定，公平锁还是非公平锁）。
+
+**lockInterruptibly()**：此方法**响应中断**，当线程在**阻塞**中的时候，若被中断，会抛出 InterruptedException 异常 。
+
+**tryLock()**：tryLock，尝试获取锁，成功则直接返回 true，不成功也不耽搁时间，立即返回 false。
+
+**unlock()**：释放锁，调用 syn c的 **release** 方法，其实是 AQS 的 release 逻辑。
+
+**newCondition()**：获取一个 **conditon**，ReentrantLock 支持多个 Condition。
+
+> **Condition**
+
+用来**替代**传统的 **Object 类** 的 **wait**()、**notify**() 实现线程间的**协作**，相比使用Object 的 wait()、notify()，使用 Condition 的 **await**()、**signal**() 这种方式实现线程间协作更加安全和高效。因此通常来说比较推荐使用 Condition。Condition 可以实现**多路通知**功能，也就是在**一个 Lock 对象**里可以创建**多个 Condition**（即对象监视器）**实例**，线程对象可以注册在指定的 Condition 中，从而**可以有选择的进行线程通知，在调度线程上更加灵活**。
+
+Condition 对象是由 **lock 对象**所创建的，且同一个锁可以**创建多个 Condition** 的对象，即创建**多个对象监视器**，这样的好处就是可以**指定唤醒线程**，而 notify 唤醒的线程是随机唤醒一个。
+
+**注意**：调用 Condition 的 **await**() 和 **signal**() 方法，都必须在 **lock 保护之内**，就是说**必须**在 lock.**lock**() 和 lock.**unlock**() **之间**才可以使用。
+
+**Conditon 中的 await() 对应 Object 的 wait()，Condition 中的 signal() 对应 Object 的 notify()，Condition 中的 signalAll() 对应 Object 的 notifyAll()**。
+
+> **Synchronized与ReentrantLock比较**
+
+**(1) 使用选择**：除非需要使用 ReentrantLock 的高级功能，否则**优先使用 synchronized**。使用 synchronized 不用担心没有释放锁而导致死锁问题，JVM 会**确保锁的释放**。性能已经不是选择的依据了。
+
+**(2) 特点对比**：
+
+- **锁的实现**：synchronized 是 **JVM** 实现的，而 ReentrantLock 是 **JDK** 实现的。synchronized 是 Java 原生的**互斥同步锁**，使用方便，对于 synchronized 修饰的方法或同步块，无需再显式释放锁。synchronized 底层是通过 monitorenter 和 monitorexit 两个字节码指令来实现加锁解锁操作的。而 ReentrantLock 做为 **API** 层面的互斥锁（也就是在 API 层面需要 lock() 和 unlock() 方法配合 try/finally 语句块来完成），需要**显式地去加锁解锁**。ReentrantLock 实现 JUC 下面的 **AQS** 实现，需要显式的加锁与解锁。
+
+- **性能**：JVM 对 synchronized 进行了很多**优化**（但是这些优化都是在虚拟机层面实现的），synchronized 与 ReentrantLock 大致相同。**能用 synchronized 尽量用**。
+- **两者都是可重入锁**：两者**都是可重入锁**。“可重入锁”概念是：自己可以再次获取自己的内部锁。比如一个线程获得了某个对象的锁，此时这个对象锁还没有释放，当其再次想要获取这个对象的锁的时候还是可以获取的，如果不可锁重入的话，就会造成死锁。同一个线程每次获取锁，锁的计数器都自增 1，所以要等到锁的计数器下降为 0 时才能释放锁。
+
+- **拓展功能**：ReentrantLock 比 synchronized 增加了一些**高级功能**。主要来说主要有三点：**① ReentrantLock 提供了一种能够中断等待锁的线程的机制；而 Synchronized 不可中断；② ReentrantLock 可实现公平锁与非公平锁，而 synchronized 仅有非公平锁；③ 可实现选择性通知（锁可以绑定多个条件）**。
+
+> **ReentrantReadWriteLock**
+
+一般的锁对于**同一受保护对象**的访问，无论是**读还是写**，都要求获得**==同样的锁==**。ReentrantReadWriteLock 主要实现**读共享，写互斥**功能，对比单纯的互斥锁在共享资源使用场景为==**频繁读取及少量修改**==的情况下可以较好的提高性能。**ReentrantReadWriteLock 表示两个锁，一个是读操作相关的锁，称为共享锁；一个是写相关的锁，称为排他锁**。
+
+**只有 “读-读” 操作是可以并行的，“读-写” 和 “写-写” 都不可以**。只有一个线程可以进行写操作，在**获取写锁**时，只有没有任何线程持有任何锁才可以获取到，在持有**写锁**时，其他任何线程都**获取不到任何锁**。在没有其他线程持有写锁的情况下，**多个**线程可以获取和持有**读锁**。
+
+读写锁有以下三个重要的**特性**：
+
+（1）**公平选择性**：支持非公平（默认）和公平的锁获取方式，吞吐量还是非公平优于公平。
+
+（2）**可重入**：ReentrantReadWriteLock 的读锁和写锁都是**可重入**的。
+
+（3）**锁降级**：遵循获取写锁、获取读锁再释放写锁的次序，**写锁能够降级成为读锁**。
+
+AQS 支持两种资源共享方式：**独占式和共享式**，这样方便使用者实现不同类型的**同步组件**，**独占式**如 ReentrantLock，**共享式**如 Semaphore，CountDownLatch，**组合式**的如 ReentrantReadWriteLock。这里的 ReentrantReadWriteLock 就是**==同时实现了独占式和共享式的锁==**。**写锁**的获取与释放就是**调用的==独占式==锁的获取与释放**，因此真实的实现就是 Sync 的 **tryAcquire** 和 **tryRelease**。**读锁**的 lock 和 unlock 的实际实现对应 Sync 的 **tryAcquireShared 和 tryReleaseShared** 方法。
+
+基本使用：
+
+```java
+// 定义读写锁
+private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+// 从读写锁获取读锁与写锁
+private final Lock readLock = rwl.readLock();
+private final Lock writeLock = rwl.writeLock();
+
+// 读方法加读锁
+public Data get(String key) {
+    readLock.lock();
+    try { return dataMap.get(key); }
+    finally { readLock.unlock(); }
+}
+```
+
+ReentrantReadWriteLock 有**五个内部类**，五个内部类之间也是相互关联的。内部类的关系如下图所示。
+
+![image-20200801141106142](assets/image-20200801141106142.png)
+
+**读写状态**：AQS 中的 **state** 整数变量用于表示锁的状态，16 位给读锁用，16 位给写锁用，使用一个变量便于进行 CAS 操作，锁的等待队列其实也只有一个。读写锁对于**同步状态**的实现是在一个**整形变量**上通过“**按位切割使用**”：将变量切割成两部分，**高 16 位表示读，低 16 位表示写。**
+
+<img src="assets/image-20200511100248505.png" alt="image-20200511100248505" style="zoom:77%;" />
+
+在线程持有**读锁**的情况下，该线程**不能取得写锁**(因为获取写锁的时候，如果发现当前的读锁被占用，就马上获取失败，不管读锁是不是被当前线程持有)。
+
+在线程持有**写锁**的情况下，该线程**可以继续获取读锁**（获取读锁时如果发现写锁被占用，只有写锁没有被当前线程占用的情况才会获取失败）。
+
+**一个线程要想同时持有写锁和读锁，必须先获取写锁再获取读锁；写锁可以“降级”为读锁；读锁不能“升级”为写锁。**
 
 ###### 线程安全总结
 
+**线程安全**有以下几种实现方式：
+
+- **阻塞同步**（悲观策略）：Synchronized、ReentrantLock。
+- **非阻塞同步**（乐观策略）：CAS。
+- **无同步**：ThreadLocal、栈封闭、不可变类。
+
+**(1) 阻塞同步**：互斥同步最主要的问题就是线程**阻塞和唤醒**所带来的性能问题，因此这种同步也称为**阻塞同步**。使用 **synchronized** 和 **ReentrantLock**。是一种**悲观**的并发策略。无论共享数据是否真的会出现竞争，**它都要进行加锁**，会影响性能。
+
+**(2) 非阻塞同步**：可以使用**基于冲突检测的乐观并发策略**：先进行操作，如果没有其它线程争用共享数据，那操作就成功了，否则采取**补偿**措施（不断地重试，直到成功为止）。这种乐观的并发策略的许多实现都不需要将线程阻塞，因此这种同步操作称为**非阻塞同步**。 **乐观锁**需要**操作和冲突检测**这两个步骤具备**原子性**，这里就不能再使用互斥同步来保证了，只能靠**硬件**来完成。**硬件支持的原子性**操作最典型的是：==**比较并交换**（Compare-and-Swap，CAS）==。CAS 指令需要有 **3 个操作数**，分别是**内存地址 V、旧的预期值 A 和新值 B**。当执行操作时，只有当 V 的值等于 A，才将 V 的值更新为 B。但是 CAS **可能存在 ABA 问题**，解决方案就是加个时间戳。
+
+**(3) 无同步方案**：**① 栈封闭**：局部变量存储在**虚拟机栈**中，属于**线程私有**的，不会出现安全问题。**② 不可变类Immutable**：final 修饰的基本类似、String 类、枚举类等。**③ ThreadLocal**：线程本地变量，不存在竞争，每个线程都有自己的副本，空间换安全。
+
 ###### JUC组件与线程协作
+
+> **常用协作方式**
+
+**(1) join()**：join 是 **Thead 类**的方法。在**当前线程**中调用**另一个线程的 join()** 方法，**会将当前线程挂起，直到目标线程运行结束**。
+
+**(2) wait() notify() notifyAll()**：==**这些方法是 Object 类的方法**==。调用 wait() 使得线程等待**某个条件满足**，线程在等待时会被挂起，当**其他线程**的运行使得这个条件满足时，其它线程会调用 **notify() 或者 notifyAll()** 来唤醒挂起的线程。它们都属于 **Object** 的一部分，而**不属于 Thread**，**每个对象**都具有上述方法。
+
+wait() notify() 方法只能用在**同步方法或者同步控制块**中使用，即在 **synchronized 代码块内**部使用，否则会在运行时抛出 IllegalMonitorStateException。
+
+使用 **wait**() 挂起期间，线程会**释放锁**。除了用于锁的**等待队列**，每个对象还有一个另一个等待队列，表示**条件队列**，该队列用于线程间的协作。
+
+**(3) await() signal() signalAll()**：**Condition 类**来实现线程之间的**协作**，可以在 **Condition** 上调用 **await**() 方法使线程等待，其它线程调用 **signal**() 或 **signalAll**() 方法唤醒等待的线程。相比于 wait() 这种等待方式，**await() 可以指定等待的条件**，因此更加灵活。但这些方法必须在 **Lock** 的**范围内**进行使用。
+
+> **CountDownLatch**
+
+**用于控制一个线程等待多个线程完成任务之后这个线程再次执行**。
+
+CountDownLatch 可理解为一个**倒计时门栓**，一开始是**关闭**的，所有**希望通过该门**的线程都需要**等待**，然后开始倒计时，倒计时变为 **0** 之后，门栓打开，等待的**所有线程都可以通过**，它是**一次性**的，用完就失效了。
+
+维护了一个**计数器 cnt**，计数器的初始值为**线程的数量**。每次**调用 countDown() 方法**会让计数器的值**减 1**，**减到 0** 的时候，那些**因为**调用 **await()** 方法而在等待的线程就会被**唤醒**。
+
+```java
+// 调用await()方法的线程会被挂起，它会等待直到count值为0才继续执行
+public void await() throws InterruptedException {};   
+// 和await()类似，只不过等待一定的时间后count值还没变为0的话就会继续执行
+public boolean await(long timeout, TimeUnit unit) throws InterruptedException {};  
+// 将count值减1
+public void countDown() {};  
+```
+
+**原理分析**：基于 AQS 的共享模式。内部有一个 Sync 类，实现了 AQS 中的 **tryAcquireShared** 和 **tryReleaseShared** 方法，从而实现对**状态变量的控制**。
+
+> **CyclicBarrier**
+
+用来控制**多个线程互相等待**，只有当多个线程都到达时，这些线程才会**继续执行**。与上述的 CountDownLatch 类似，不过它是**循环**的，可以用作**重复**的同步。相当于一个**栅栏**，特别适合用于**并行迭代计算**，每个线程负责一部分计算任务，然后在栅栏处等待其他线程完成，等待**所有线程**到齐后，交换数据和计算结果，进行**下一次**迭代（可重复）。
+
+和 CountdownLatch 相似，都是通过维护**计数器**来实现的。线程执行 **await**() 方法之后计数器**会减 1**，并进行等待，直到**计数器为 0**，所有调用 **await**() 方法而在等待的线程才能继续执行。
+
+CyclicBarrier 和 CountdownLatch 的一个区别是，CyclicBarrier 的计数器通过调用 **reset**() 方法可以**循环使用**，所以它才叫做**循环屏障**。
+
+**源码分析**：CountDownLatch **基于 AQS 的共享模式**，而 CyclicBarrier **基于 Condition 来实现**的。
+
+**比较 CountDownLatch 与 CyclicBarrier**：**CyclicBarrier 的计数器由自己控制，而 CountDownLatch 的计数器则由使用者**来控制，在 CyclicBarrier 中线程调用 await 方法不仅会将自己阻塞还会将计数器减 1，而在 CountDownLatch 中线程调用 **await** 方法只是将自己阻塞而不会减少计数器的值。另外，**CountDownLatch 只能拦截一轮，而 CyclicBarrier 可以实现循环拦截**。
+
+> **Semaphore**
+
+Semaphore 类似于操作系统中的**==信号量==**，可以控制对**互斥资源的访问线程数**。可用于**==限流==**。这跟 Hystrix 的原理其实类似的。用于控制对**公共资源**的获取。信号量主要用于**两个目的，一个是用于多个共享资源的互斥使用，另一个用于并发线程数的控制**。
+
+在**信号量**上定义两种操作： **acquire**（获取） 和 **release**（释放）。当一个线程调用 acquire 操作时，它要么通过成功获取信号量（信号量减 1），要么一直**等下去**，直到有线程释放信号量或超时。**release**（释放）实际上会将信号量的值**加 1**，然后**唤醒**等待的线程。
+
+如果初始化了一个许可为 **1** 的 **Semaphore**，那么就相当于一个**不可重入**的互斥锁（**Mutex**）。
+
+**源码分析**：Semaphore 是信号量，用于管理一组资源。其内部是基于 AQS 的**共享模式**，AQS 的**状态表示许可证的数**量。可以用这个做一个连接池。
+
+> **FutureTask**
+
+Callable 可以有**返回值**，**返回值**通过 **Future** 进行封装。**FutureTask** 实现了 **RunnableFuture** 接口，该接口继承自 **Runnable** 和 **Future** 接口，这使得 **FutureTask 既可以当做一个==任务==执行，也可以有返回值**。
+
+FutureTask 可用于**异步获取执行结果或取消执行任务**的场景。当一个计算任务需要执行**很长时间**，那么就可以用 FutureTask 来封装这个任务，主线程在完成自己的任务之后**再去获取结果**。
+
+```java
+// 封装任务,泛型是返回类型
+FutureTask<Integer> futureTask = new FutureTask<Integer>(new Callable<Integer>()            {
+    @Override
+    public Integer call() throws Exception {
+        int result = 0;
+        // 此处故意计算很久
+        for (int i = 0; i < 100; i++) {
+            Thread.sleep(100);
+            result += i;
+        }
+        // 返回Integer类型结果
+        return result;
+    }
+});
+// 线程传入futureTask
+Thread computeThread = new Thread(futureTask);
+computeThread.start();
+```
+
+> **ForkJoin**
+
+Fork/Join 框架是 Java7 提供了的一个用于**并行执行任务**的框架， 是一个把大任务分割成若干个小任务，最终汇总每个小任务结果后得到大任务结果的框架。Join 就是**合并**这些子任务的执行结果，最后得到这个大任务的结果。
+
+比如计算 1+2+.....＋10000，可以分割成 10 个子任务，每个子任务分别对 1000 个数进行求和，最终汇总这 10 个子任务的结果。ForkJoinPool 主要用于实现“**分而治之**”的算法，特别是分治之后递归调用的函数，例如 QuickSort 等。主要用于**并行计算**中，和 **MapReduce** 原理类似，都是把大的计算任务**拆分**成多个**小任务并行计算**。
+
+ForkJoin 使用 **ForkJoinPool** 来启动，它是一个特殊的**线程池**，**线程数量**取决于 **CPU 核数**。
+
+**工作窃取算法**：ForkJoinPool 实现了==**工作窃取算法**==来提高 CPU 的利用率。每个**线程**都维护了一个**双端任务队列**，用来存储需要执行的任务。工作窃取算法允许**空闲线程**从其它线程的双端队列中**窃取一个任务**来执行。窃取的任务必须是**最晚的**任务，**避免和队列所属线程发生竞争**。例如下图中，Thread2 从 Thread1 的队列中拿出 futureTask的 Task1 任务，Thread1 会拿出 Task2 来执行，这样就避免发生竞争。但是如果队列中**只有一个任务**时还是会发生**竞争**。 
+
+<img src="assets/image-20200516222251270.png" alt="image-20200516222251270" style="zoom:70%;" />
 
 ###### Atomic与Unsafe与CAS
 
+> **原子操作与原子变量**
+
+Java 中可以通过**锁和循环 CAS 的方式**来实现原子操作。JVM 中的 CAS 操作正是利用了处理器提供的 **CMPXCHG** 指令实现的。**自旋 CAS 实现的基本思路就是循环进行 CAS 操作直到成功为止**。
+
+**原子操作的实现方式**：(1) 悲观策略：加锁。(2) 乐观策略：CAS 不断重试，一旦发现冲突，**继续尝试**直到成功修改该变量。
+
+> **AtomicInteger**
+
+之所以称为原子变量，是因为它包含一些以**原子方式实现组合操作**的方法。这些方法**都依赖**于下面讲的 ==**CAS**== 方法。
+
+AtomicInteger 类主要利用 **CAS (compare and swap) + volatile 和 native 方法来保证原子操作**，从而避免 synchronized 的高开销，执行效率大为提升。
+
+```java
+// 基于原子操作，获取当前原子变量中的值并为其设置新值
+public final int getAndSet(int newValue)
+// 基于原子操作，比较当前的value是否等于expect，如果是设置为update并返回true，否则返回false
+public final boolean compareAndSet(int expect, int update)
+// 基于原子操作，获取当前的value值并自增一
+public final int getAndIncrement()
+// 基于原子操作，获取当前的value值并自减一
+public final int getAndDecrement()
+// 基于原子操作，获取当前的value值并为value加上delta
+public final int getAndAdd(int delta)
+// 此外还有一些反向的方法，比如：先自增在获取值的等等
+```
+
+内部的 value 字段被 volatile 修饰，**解决内存可见性问题**。主要关注 **incrementAndGet** 方法的实现。
+
+```java
+public final int incrementAndGet() {
+    for (;;) {	// 无限循环
+        // 获取当前值
+        int current = get();
+        // 计算期望的next值
+        int next = current + 1;
+        // 进行比较
+        if (compareAndSet(current, next)) {
+            // 只有设置成功才返回
+            return next;
+        }
+    }
+}
+```
+
+方法体是一个**死循环**，current 获取到当前原子变量中的值，由于 value 被修饰 volatile，所以不存在**内存可见性**问题，数据一定是**最新**的。然后 current 加一后赋值给 next，调用 CAS 原子操作判断 value 是否被别的线程修改过，如果还是原来的值，那么将 next 的值赋值给 value 并返回 next，否则重新获取当前 value的值，再次进行判断，**直到操作完成**。
+
+==**compareAndSet** 方法==又被称为 **==CAS==**（**比较并设置**），该方法调用 **unsafe** 的一个 **compareAndSwapInt** 方法。作用：比较当前原子变量的值**是否等于 expect**，如果是则将其修改为 **update** 并返回 **true**，否则直接返回 false。即**如果与期望值相等才更新，否则不更新**。
+
+> **CAS**
+
+随着硬件指令集的发展，可以使用基于**冲突检测的乐观并发策略**：先进行操作，如果没有其它线程争用共享数据，那操作就成功了，否则**不断重试**，直到成功为止。
+
+乐观锁需要**操作和冲突检测**这两个步骤具备**原子性**，这里就不能再使用互斥同步来保证，只能靠**硬件来完成**。硬件支持的原子性操作最典型的是：**比较并交换（Compare-and-Swap，CAS）**。CAS 指令需要有 3 个操作数，分别是内存地址 V、旧的预期值 A 和新值 B。当执行操作时，只有当 V 的值等于 A，才将 V 的值更新为 B。
+
+**ABA 问题**：假如一个线程想要对变量 count 进行修改，实际操作之前获取 count 的值为 A，此时来了一个线程将 count 值修改为 B，又来一个线程获取 count 的值为 B 并将 count 修改为 A，此时第一个线程**全然不知道** count 的值已经被修改两次了，虽然值还是 A，但是实际上数据**已经是脏**的。
+
+一个解决办法是对 count 的每次操作都记录下当前的一个**时间戳**，可以使用 AtomicStampedReference 类。
+
+> **Unsafe类**
+
+Unsafe 是位于 **sun.misc 包**下的一个类，主要提供一些用于执行**低级别、不安全操作**的方法，如**直接访问系统内存资源、自主管理内存资源**等，这些方法在提升 Java 运行效率、增强 Java 语言底层资源操作能力方面起到了很大的作用。Unsafe 类为**单例实现**，提供**静态方法 getUnsafe 获取 Unsafe 实例**，当且仅当调用 getUnsafe 方法的类为**引导类加载器 BootstrapClassLoader** 所加载时才合法，否则抛出 SecurityException 异常。
+
+Unsafe 提供的 API 大致可分为**内存操作、CAS、Class 相关、对象操作、线程调度、系统信息获取、内存屏障、数组操作等几类**。
+
+**(1) 内存操作**：这部分主要包含**堆外内存**的分配、拷贝、释放、给定地址值操作等方法。如 DirectByteBuffer 与 NIO 相关的东西。
+
+**(2) CAS相关**：如 AtomicInteger 实现。
+
+**(3) 线程调度**：包括**线程挂起、恢复、锁机制**等方法。  方法 **park、unpark** 即可实现**线程的挂起与恢复**，将一个线程进行**挂起是通过 park 方法**实现的，调用 park 方法后，线程将一直**阻塞直到超时或者中断等条件**出现；**unpark** 可以终止一个挂起的线程，使其恢复正常。AQS 中就用了这个。
+
+**(4) 内存屏障**：加入内存屏障避免指令重排序。
+
 ###### 线程池与定时任务
+
+> **为什么用线程池？**
+
+(1) **重用存在的线程，减少线程创建，消亡的开销，提高性能**。(2) 提高**响应速度**。(3) 控制资源，防止资源被无节制使用。
+
+> **Executor框架**
+
+**Executor 框架**包括：**线程池**，Executor，Executors，ExecutorService，CompletionService，Future，Callable 等。其框架大致如下：
+
+![image-20200615204726276](assets/image-20200615204726276.png)
+
+**Executor 接口**：线程池框架中**顶级接口**，仅定义了一个用于**执行 Runnable 的 execute 方法**。
+
+**ExecutorService 接口**：继承自 Executor，定义了更多的方法，决定了线程池的具体行为。除了继承而来的 **execute** 方法（执行 **Ruannable** 类型的任务,）这里又增加了一个执行任务的方法：**submit** 方法（可用来提交 **Callable 或 Runnable 任务**，并返回代表此任务的 **Future** 对象）。
+
+> **自带的三种线程池**
+
+**Executors 类**：是一个工具类，可以用于创建各种线程池。Executors 提供了一系列**工厂方法**用于**创建线程池**，返回的线程池都实现了 **ExecutorService** 接口。   
+
+```java
+// 创建固定线程数量的线程池
+public static ExecutorService newFixedThreadPool(int nThreads);
+// 创建不限制线程数量的线程池
+public static ExecutorService newCachedThreadPool();
+// 创建单线程的线程池
+public static ExecutorService newSingleThreadExecutor();
+// 创建一个支持定时及周期性的任务执行的线程池，多数情况下可用来替代Timer类
+public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize);
+```
+
+**newFixedThreadPool**：创建**固定线程数目**的线程池，使用固定数目 nThreads 个线程，使用==**无界阻塞队列 LinkedBlockingQueue**== **存放任务**，线程创建后不会超时终止，由于是无界队列，如果**排队任务**过多，可能消耗过多**内存**。
+
+**newCachedThreadPool**：可以==**创建的线程数量是没有限制**==的。使用的队列是 **SynchronousQueue** 创建一个**可缓存**的线程池，调用 execute 将重用以前构造的线程（如果线程空闲可用），如果现有线程没有可用的，则创建一个**新线程**并添加到池中。终止并从缓存中移除那些已有 **60 秒钟**未被使用的线程。其 **corePoolSize** 是 **0**，**maximumPoolSize** 是 Integer.MAX_VALUE，keepAliveTime 是 60 秒。**核心线程数为 0**，没有任务时所有线程都会被回收。
+
+**newSingleThreadExecutor**：创建一个只有**一个**线程的线程池，使用**无界队列 LinkedBlockingQueue**，线程创建后不会超时终止，该线程**顺序执行**所有任务，适用于**需要确保==所有任务被顺序执行==**的场景。
+
+对比三种线程池。
+
+|       线程池类型       |                    CachedThreadPool                    |              FixedThreadPool               |                     SingleThreadExecutor                     |
+| :--------------------: | :----------------------------------------------------: | :----------------------------------------: | :----------------------------------------------------------: |
+|     **核心线程数**     |                       ==**0**==                        |            nThreads（用户设定）            |                            **1**                             |
+|     **最大线程数**     |                 **Integer.MAX_VALUE**                  |            nThreads（用户设定）            |                            **1**                             |
+| **非核心线程存活时间** |                        **60s**                         |            **==无非核心线程==**            |                       **无非核心线程**                       |
+|  **等待队列最大长度**  |                         **1**                          |                 **无限制**                 |                          **无限制**                          |
+|          特点          | **提交任务优先复用空闲线程，没有空闲线程则创建新线程** |  固定线程数，等待运行的任务均放入等待队列  | 有且仅有**一个**线程在运行，等待运行任务放入等待队列，可保证任务运行顺序与提交顺序一直 |
+|        内存溢出        |     大量提交任务后，可能出现**无法创建线程的 OOM**     | 大量提交任务后，可能出现**内存不足的 OOM** |          大量提交任务后，可能出现**内存不足的 OOM**          |
+
+> **线程池任务类型**
+
+任务分两类：一类是实现了 **Runnable** 接口的类，一类是实现了 **Callable** 接口的类。两者都可以被 **ExecutorService** 执行，但是 Runnable 任务没有返回值，而 Callable 任务有返回值。
+
+**Executor 接口的 execute 方法仅执行 Runnable，而 ExecutorService 接口继承自 Executor 接口并拓展了 submit 方法，可以同时执行 Runnable 与 Callable**。
+
+Callable 的 **call**() 方法只能通过 ExecutorService 的 **submit** (Callable\<T> task) 方法来执行，并且返回一个 \<T> Future\<T>，是表示任务**等待完成的 Future**。
+
+需要注意：如果 Future 的返回尚未完成，则 get() 方法会==**阻塞等待**==，直到 Future 完成返回，可以通过调用 **isDone**() 方法判断 Future 是否完成了返回。
+
+1. **execute() 方法用于提交不需要返回值的任务，所以无法判断任务是否被线程池执行成功与否；**
+2. **submit() 方法用于提交需要返回值的任务。线程池会返回一个 Future 类型的对象，通过这个 Future 对象可以判断任务是否执行成功**，并且可以通过 Future 的 get() 方法来获取返回值，get() 方法会阻塞当前线程直到任务完成，而使用 get(long timeout，TimeUnit unit) 方法则会阻塞当前线程一段时间后立即返回，这时候有可能任务没有执行完。
+
+> **Executor的中断任务**
+
+调用 Executor 的 **shutdown**() 方法会等待线程都**执行完毕之后**再关闭，但是如果调用的是 **shutdownNow**() 方法，则相当于调用**每个线程的 interrupt()** 方法。
+
+如果只想中断 Executor 中的一个线程，可以通过使用 **submit()** 方法来提交一个线程，它会返回一个 **Future<?> 对象**，通过调用该对象的 **cancel**(true) 方法就可以单独**中断线程**。
+
+> **ThreadPoolExecutor及其核心参数**
+
+着重分析 **execute** 方法。ThreadPoolExecutor 里面使用到 JUC 同步器框架 **AbstractQueuedSynchronizer**（俗称 AQS）、大量的位操作、 CAS 操作。
+
+ThreadPoolExecutor 类的构造方法如下： 
+
+```java
+public ThreadPoolExecutor(int corePoolSize,
+                          int maximumPoolSize,
+                          long keepAliveTime,
+                          TimeUnit unit,
+                          BlockingQueue<Runnable> workQueue,
+                          ThreadFactory threadFactory,
+                          RejectedExecutionHandler handler) {
+    if (corePoolSize < 0 ||
+        maximumPoolSize <= 0 ||
+        maximumPoolSize < corePoolSize ||
+        keepAliveTime < 0)
+        throw new IllegalArgumentException();
+    if (workQueue == null || threadFactory == null || handler == null)
+        throw new NullPointerException();
+    this.corePoolSize = corePoolSize;
+    this.maximumPoolSize = maximumPoolSize;
+    this.workQueue = workQueue;
+    this.keepAliveTime = unit.toNanos(keepAliveTime);
+    this.threadFactory = threadFactory;
+    this.handler = handler;
+}
+```
+
+**(1) 核心线程数corePoolSize**：线程池中的**核心线程数**。
+
+**(2) 最大线程数maximumPoolSize**：线程池**最大**线程数，表示在线程池中最多能创建多少个线程。
+
+**(3) 非核心线程存活时间keepAliveTime**：**默认情况**下，只有当线程池中的线程数**大于 corePoolSize** 时，keepAliveTime 才会起作用。如果一个线程空闲的时间达到 keepAliveTime，则会终止，直到线程池中的线程数不超过 corePoolSize。
+
+**(4) 时间单位unit**：keepAliveTime 的单位。 
+
+**(5) 阻塞任务队列workQueue**：用来**保存等待被执行的任务的阻塞队列**，且任务必须实现 Runable 接口，有多种实现。
+
+**(6) 线程工厂threadFactory**：用来创建新线程。
+
+**(7) 拒绝策略handler**：当线程池的**任务缓存队列已满**并且线程池中的**线程数目达到 maximumPoolSize**，如果还有任务到来就会采取**任务拒绝策略**。
+
+- ThreadPoolExecutor.**AbortPolicy**：**丢弃任务并直接抛出异常**，**默认策略；**这将失去对这个任务的处理。
+- ThreadPoolExecutor.CallerRunsPolicy：用**调用者所在的线程**来执行任务；对于可伸缩的应用程序，建议使用此策略。当最大池被填满时，此策略为我们提供可伸缩队列。**一般不希望任务丢失会选用这种策略，但从实际角度来看，原来的异步调用意图会退化为同步调用**。
+- ThreadPoolExecutor.DiscardOldestPolicy：丢弃阻塞队列中靠**最前**的任务，并执行**当前**任务；
+- ThreadPoolExecutor.DiscardPolicy：直接**丢弃**任务，不抛异常；
+
+上面的 4 种策略都是 ThreadPoolExecutor 的**内部类**。当然也可以根据应用场景实现 **RejectedExecutionHandler** 接口，自定义饱和策略，如**记录日志或持久化存储不能处理的任务**。
+
+> **线程池状态**
+
+**状态表示**：**状态控制主要围绕原子整型成员变量 ==ctl==**。ctl 贯穿在线程池的**整个生命周期**中。
+
+```java
+private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
+```
+
+它是一个**原子变量**，主要作用是用来**保存线程数量和线程池的状态**。一个 int 数值是 32 个 bit 位，这里采用**高 3 位来保存==运行状态 runState==**，**低 29 位来保存==有效线程数量 workCount==**。
+
+**线程池五种状态**：线程池的**五种状态**对应五种状态变量：**运行状态**保存在 **ctl 值的高 3 位** (所有数值左移 29 位)。
+
+```java
+// 接收新任务,并执行队列中的任务
+private static final int RUNNING = -1 << COUNT_BITS;
+// 不接收新任务,但是执行队列中的任务
+private static final int SHUTDOWN = 0 << COUNT_BITS;
+// 不接收新任务,不执行队列中的任务,中断正在执行中的任务
+private static final int STOP = 1 << COUNT_BITS;    
+// 所有的任务都已结束,线程数量为 0,处于该状态的线程池即将调用 terminated()方法
+private static final int TIDYING = 2 << COUNT_BITS; 
+// terminated()方法执行完成
+private static final int TERMINATED = 3 << COUNT_BITS;
+```
+
+状态转换过程如下：
+
+<img src="assets/image-20200801173159718.png" alt="image-20200801173159718" style="zoom:50%;" />
+
+**RUNNING**：线程池被一旦被创建，就处于 RUNNING 状态，能够**接收新任务**，以及对已添加的任务进行处理。
+
+**SHUTDOWN**：调用线程池的 **shutdown**() 接口时，线程池由 RUNNING -> SHUTDOWN。**不接收**新任务，但会把已添加的任务**执行完**。
+
+**STOP**：调用线程池的 **shutdownNow**() 接口时，线程池由 (RUNNING or SHUTDOWN ) -> STOP。**不接收**新任务，**不处理**已添加的任务，并且会**中断正在处理**的任务。
+
+**TIDYING**：当所有的任务已**终止**，**ctl 记录的”任务数量”为 0**，线程池会变为 **TIDYING** 状态。会执行**钩子函数 terminated()**。
+
+**TERMINATED**：线程池**彻底终止**，就变成 TERMINATED 状态。
+
+> **任务执行过程**
+
+**Step1**：假设**核心线程数为 4**。那么前面 4 个提交的任务会直接**创建线程**并执行，直到达到核心线程数 corePoolSize。
+
+**Step2**：当达到核心线程数后，新的任务进入到**任务队列中排队**，这个就是**阻塞队列**，假设这里限制了阻塞队列长度为 4，那么当前还剩下 12 个任务。
+
+**Step3**：此时还有任务，这时候就到第三步创建非核心线程执行任务，假设这里最大线程数 maximumPoolSize 为 6，即还可以创建**两个非核心线程**。这时候还剩下十个任务。
+
+**Step4**：此时多于的任务不能再加了，则采用**拒绝策略**进行处理。
+
+<img src="assets/image-20200615223039283.png" alt="image-20200615223039283" style="zoom:50%;" />
+
+总结流程如下图。
+
+![image-20200615222104386](assets/image-20200615222104386.png)
+
+> **Worker线程**
+
+**线程池中的每一个线程被封装成一个 Worker 对象，ThreadPool 维护的其实就是一组 Worker 对象**。Worker 继承于 **AQS** ，并实现了 Runnable 接口。
+
+**runWorker() 方法的核心流程：**
+
+- Worker 先执行一次解锁操作，用于**解除不可中断**状态。
+- 通过 **while 循环**调用 **getTask**() 方法从**任务队列中获取任务**，首轮循环也有可能是外部传入的 **firstTask** 任务实例。
+- 如果线程池更变为 STOP 状态，则需要确保工作线程是中断状态并且进行中断处理，否则要保证工作线程必须不是中断状态。
+- 执行任务实例 Runnale#**run**() 方法，任务**实例执行之前和之后**（包括正常执行完毕和异常执行情况）分别会调用**钩子方法** beforeExecute() 和 afterExecute()。
+- **while 循环跳出**意味着 runWorker() **方法结束和工作线程生命周期结束**（Worker#run()生命周期完结），会调用 processWorkerExit() 处理工作线程退出的后续工作。
+
+由于 **While 循环的存在**使得一个线程执行完任务之后也不会退出。
+
+> **线程池关闭**
+
+ExecutorService 接口提供了两个关闭线程池的方法，ThreadPoolExecutor 实现了**两个方法**，用于线程池的关闭，分别是 **shutdown**() 和 **shutdownNow**()，其中：
+
+- **shutdown**()：不会立即终止线程池，而是要**等所有任务缓存队列中的任务都执行完**后才终止，但再也不会接受新的任务。
+- **shutdownNow**()：**立即终止线程池**，并尝试打断正在执行的任务，并且清空任务缓存队列，返回尚未执行的任务。
+
+> **如何合理设置线程池的大小**
+
+一般需要根据任务的类型来配置线程池大小：
+
+- 如果是 **CPU 密集型**任务，就需要尽量压榨 CPU，参考值可以设为 NCPU + 1。
+- 如果是 **IO 密集型**任务，参考值可以设置为 2 * NCPU。
+
+> **定时任务实现**
+
+**(1) 基于 Timer**：自定义一个任务，继承于 **TimerTask**，重写 run 方法。利用 java.util.Timer 实现任务调度。Timer 内部主要由**任务队列**和 **Timer 线程**两部分组成。任务队列是一个基于**堆实现的优先级队列**，按照下次执行的时间排优先级。Timer 线程则负责执行**所有的定时任务**，需要强调的是，一个 **Timer 对象只有一个 Timer 线程**，所以如果一个任务是**无限循环**的话其他任务可能就执行不了。同时，一个任务**内部抛出异常**将导致 Timer 线程退出，**导致所有的定时任务都被取消**。如果希望各个定时任务不互相干扰，一定要注意在任务**内部捕获异常**。
+
+**(2) ScheduledExecutorService**：每一个被调度的任务都会 **由线程池中一个线程去执行，因此任务是并发执行的，相互之间不会受到干扰**。ScheduledExecutorService 的主要实现类是 ==**ScheduledThreadPoolExecutor**==，它是线程池 **ThreadPoolExecutor** 的子类，是**基于线程池**实现的。它的任务队列是一个**无界**的**优先级队列**。有**多个线程执行任务**，所以一个任务内的**无限循环不会**影响其他的任务，多个任务可以同时执行。一个**任务抛出异常也不会影响**其他任务，但是应该尽量把异常捕获。
+
+**(3) Quartz实现**：开源**作业调度框架**，它实现了**作业和触发器的多对多**的关系，还能把多个作业与不同的触发器关联。
 
 ###### ThreadLocal
 
+线程本地变量，在每个线程都有**同一个**变量的**独有拷贝**。内部使用 **ThreadLocalMap** 存储变量的拷贝，数据存储与许多逻辑操作都是委托给静态内部类 ThreadLocalMap 完成的。使用**线性探测法**而不是拉链法解决哈希冲突问题。
+
+**典型应用**：**DateFormat** 的线程安全化，**ThreadLocalRandom** 类，**Spring 上下文**。
+
+ThreadLocal 提供**线程本地变量**。这些变量与正常的变量不同，因为**每一个线程在访问 ThreadLocal 实例的时候（通过其 get 或 set 方法）都有自己的、独立初始化的变量副本**。
+
+**==线程本地变量==**，每个线程都有**同一个**变量的**独有拷贝**，如**多个线程**同时操作的是**同一个** ThreadLocal 对象，但每个线程都有**自己独立的值**，变动不会影响其他的线程。ThreadLocal 对象一般都定义为 **static**，便于**引用**。
+
+ThreadLocal 虽然叫线程本地(局部)变量，但是实际上它**并不存放**任何的信息，可以这样理解：它是线程(Thread)**操作 ThreadLocalMap 中存放的变量的桥梁**。它主要提供了**初始化、set()、get()、remove()** 几个方法。
+
+**ThreadLocal 实例**总是通过 **Thread.currentThread() 获取到当前操作线程实例，然后去操作线程实例中的 ThreadLocalMap 类型的成员变量，因此它是一个桥梁，本身不具备存储功能**。
+
+**ThreadLocalMap** 是 ThreadLocal 内部的一个 **Map** 实现，然而它并没有实现任何集合的接口规范，因为它仅供内部使用，数据结构采用 **数组 + ==开方地址法==**，**Entry** 继承 **WeakReference**，是基于 ThreadLocal 这种**特殊场景**实现的 Map，它的实现方式很值得研究。整体结构如下：
+
+![image-20200831203141465](assets/image-20200831203141465.png)
+
+Entry 继承 WeakReference，以 **ThreadLocal** 为 **key**，类似 WeakHashMap，对**内存敏感**。虽然继承 WeakReference，但只能实现对 Reference 的 **key 的回收**，而**对 value 的回收需要手动解决**。value 何时被回收？ **如果没有理解 value 的回收时间，那可能留下==内存泄露==的隐患**。
+
+ThreadLocalMap 中会出现一些 **Key 为 null**，但是 **Value 不为 null** 的 Entry 项，这些 **Entry 项**如果不主动清理，就会一直**驻留**在 ThreadLocalMap 中。
+
+ThreadLocal 中一个设计亮点是 **ThreadLocalMap** 中的 **Entry 结构的 Key 用到了弱引用**。试想如果使用强引用，等于 ThreadLocalMap 中的所有数据**都是与 Thread 的生命周期绑定**，这样很容易出现因为大量线程持续活跃导致的内存泄漏。使用了弱引用的话，JVM 触发 GC 回收弱引用后，ThreadLocal 在**下一次调用get()、set()、remove()方法就可以删除**那些 ThreadLocalMap 中 Key 为 null 的值，起到了**惰性删除释放内存**的作用。因此一定要手动调用 remove 方法。
+
+ThreadLocalMap 的 Entry 继承 WeakReference，而 Entry 的 Key 是 WeakReference 的封装，换句话说 **Key 就是弱引用**，弱引用在下次 GC 之后就会被回收，如果 **ThreadLocal 在 set 之后不进行后续的操作**，因为 **GC 会把 Key 清除掉，但是 Value 由于线程还在存活，所以 Value 一直不会被回收，最后就会发生内存泄漏**。
+
+记住：**每次使用完 ThreadLocal 实例，都调用它的 remove() 方法，清除 Entry 中的数据。**
+
+> **项目中用过ThreadLocal吗？**
+
+SimpleDateFormat 是非线程安全，在采集仪器数据时，是多线程获取时间与日期，可能出现问题。实现安全的一种方式是**使用锁**，另一种方式是每次都**创建一个新的对象**，更好的方式是使用 ThreadLocal，**每个线程使用自己的 SimpleDateFormat **，就不存在线程安全问题了。
+
 ##### 17. IO
+
+文件读写：硬盘的访问相对内存慢得多得多。一般读写文件需要**两次数据复制**，比如读文件，需要先从**硬盘中复制到操作系统的内核**，**再从内核复制到应用程序分配的内存**中。操作系统所在的环境是内核态，用户程序所在环境为用户态，切换会有较大的开销。
+
+> **File类**
+
+使用 **File** 来抽象一个**文件**，无论是**普通文件或是目录**，都可对应于一个 **File 对象**。File **==无法==**对其所表示文件**内容**进行**任何读写操作**（那是**流**做的事情，读写需要通过 FileReader 之类的类）。==**File 类**可以用于表示**文件和目录的信息**，但是**它不表示文件的内容**==。
+
+> **属性文件Properties类**
+
+属性文件就是**配置文件**。其中以**键值对**的形式存放信息。注意，每个键值对结尾**没有分号**。用 Properties 类可以**表示属性文件**。
+
+> **IO流**
+
+Java IO 分别为**输入流和输出流**，输入流完成外部数据向计算机内存写入，输出流则反之。而针对输入流和输出流，根据**字节和字符**的不同，又分为**字节流和字符流**。
+
+<img src="assets/image-20200507222950746.png" alt="image-20200507222950746" style="zoom:49%;" />
+
+下面的体系图是自己理解画的，错了不负责。
+
+![image-20200629200405055](assets/image-20200629200405055.png)
+
+流操作类大致分为两大类，一类是针对二进制文件的==**字节流**==，另一类是针对文本文件的==**字符流**==。
+
+> **装饰者模式**
+
+以 InputStream 为例，
+
+- **InputStream** 是最基本的**抽象组件**；
+- FileInputStream 是 InputStream 的**子类**，属于**具体组件**，提供了字节流的**输入**操作；
+- FilterInputStream 属于**装饰者**，用于**装饰具体组件**，为组件提供**额外**的功能。例如 BufferedInputStream 为 FileInputStream 提供**缓存**的功能。
+
+<img src="assets/1563439368833.png" alt="1563439368833" style="zoom:77%;" />
+
+需要**实例化**一个具有**缓存**功能的**字节流对象**时，只需要在 FileInputStream 对象上再**套一层** **BufferedInputStream** 对象即可。
+
+```java
+// 具体组件fileInputStream对象
+FileInputStream fileInputStream = new FileInputStream(filePath);
+// 利用BufferedInputStream装饰fileInputStream对象
+BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);	
+```
+
+> **字符流**
+
+字节流处理文件的时候是**基于字节**的，而字符流处理文件则是基于一个个**字符**为基本单元的。字符流操作的本质就是==**字节流操作 + 编解码**==两个过程的**封装**，写一个字符到文件时需要将字符**编码**成二进制，然后以字节为基本单位写入文件，当读一个字符到内存时需要以字节为基本单位读出，然后**解码**成字符。
+
+**编码**就是把**字符**转换为**字节**，而**解码**是把**字节**重新组合成**字符**。如果编码和解码过程使用不同的编码方式那么就出现了**乱码**。
+
+**==几乎所有的字符流都离不开某个字节流实例==**。
+
+> **序列化**
+
+序列化就是将一个**对象**转换成**字节序列**，方便存储和传输。
+
+- **序列化**：ObjectOutputStream.**writeObject**()
+- **反序列化**：ObjectInputStream.**readObject**()
+
+==**不会**对**静态变量**进行序列化==，因为序列化只是保存**对象的状态**，静态变量是表示**类**的状态。**==transient==** 代表对象的**临时数据**，也不会被序列化。
+
+当一个对象的实例变量引用其它对象，序列化该对象时也会把引用对象进行序列化。这是能**用序列化解决深拷贝**问题的重要原因。
+
+> **transient**
+
+**transient** 关键字可以使一些属性**不会**被序列化。ArrayList 中存储数据的数组 **elementData** 是用 **transient** 修饰的，因为这个数组是**动态扩展**的，并不是所有的空间都被使用，因此就**不需要**所有的内容都被序列化。通过==**重写**==序列化和反序列化方法，使得可以只序列化数组中**有内容**的那部分数据。
+
+> **其他**
+
+当一个父类实现序列化，子类**自动实现序列化**，不需要显式实现 Serializable 接口。
+
+**并非所有的对象都可以序列化**：**资源分配方面**，比如 socket，thread 类，即使可以序列化，进行传输或者保存，也无法对他们**重新进行资源分配**。
 
 ##### 18. 动态与函数式编程
 
+Lambda 核心思想：用**行为参数化把代码传递给方法**。Lambda 表达式是一个**可传递的代码块**，可以在以后执行一次或多次。
+
+> **Lambda基本语法**
+
+- lambda 表达式形式：**参数， 箭头（->) 以及一个表达式**。
+- Lambda 表达式可以具有**零个，一个或多个参数**。
+- 可以**显式声明参数**的类型，也可以由编译器**自动从上下文推断参数**的类型。
+- 多个参数用**小括号**括起来，用**逗号分隔**。例如 (a, b) 或 (int a, int b) 或 (String a, int b, float c)。
+- **空括号用于表示一组空的参数**。例如 **() -> 42**。
+- 当有且仅有**一个参数**时，如果不显式指明类型，则**不必使用小括号**。例如 a -> return a * a。
+- Lambda 表达式的正文可以包含零条，一条或多条语句。
+- 如果 Lambda 表达式的**正文只有一条**语句，则**大括号可不用写**，且表达式的**返回值类型**要与匿名函数的返回类型**相同**。
+- 如果 Lambda 表达式的**正文有一条以上的语句**必须包含在**大括号 {}（代码块）**中，且表达式的返回值类型要与匿名函数的返回类型相同。**必须每个分支都有返回类型**。如果一个 lambda 表达式只在某些分支返回一个值， 而在另外一些分支不返回值，这是不合法的。 例如，（int x) -> { if (x >= 0) return 1; } 就**不合法**。
+
+> **函数式接口**
+
+函数式接口，即**只定义一个抽象方法的接口**，能够适用到 Lambda 表达式中。**同一个 Lambda 表达式**可以用在**不同**的函数式接口上，只要它们的**抽象==方法签名==能够兼容**。
+
+**1. Supplier\<T>**：为“**提供给定类型对象**”的行为提供了一种抽象，**生产者**。
+
+**2. Consumer\<T>**：消费者模型。
+
+**3. Function<T, R>**：**接受一个 ==T== 类型的参数，参数一个 ==R== 类型的结果，做==类型转换==**。
+
+**4. Predicate\<T>**：只有一个参数的返回布尔类型值的 **断言型** 接口。可以用于**删选**符合条件的对象。
+
+> **方法引用**
+
+方法引用是 Java8 提供的一个新的**语法糖**，以简化 Lamda 代码。
+
+**System.out::println**是一个方法引用，与上述的 Lambda 表达式等价。
+
+要用 **:: 操作符**分隔方法名与对象或类名。主要有 3 种情况：
+
+- 任意类型的实例方法：**Class::instanceMethod**
+- 现有对象实例方法：**object::instanceMethod**
+- 静态方法：**Class::staticMethod**
+
+**构造器引用**：构造器引用与方法引用很类似，只不过**方法名为 new**。例如， **Person::new** 是 Person **构造**
+**器**的一个引用。
+
+> **变量作用域**
+
+lambda 表达式可以==**捕获**==外围作用域中变量的值。在 lambda 表达式中， 只能引用==**值不会改变**==的变量。lambda表达式中捕获的变量必须实际上是**最终变量** ( ==**final 类型**==)。实际上的最终变量是指， 这个变量初始化之后就不会再为它赋新值。lambda 表达式**只能引用标记了 final 的外层局部变量**，这就是说不能在 lambda 内部修改定义在域外的局部变量，否则会编译错误。与局部变量相比，对 lambda 表达式中的**实例字段和静态变量都有读写访问权限**。
+
+> **Optionals**
+
+Optionals 不是函数式接口，而是**用于防止 NullPointerException** 的工具。Optional 是一个简单的容器，其**值可能是 null 或者不是 null**。在 Java8 之前一般某个函数应该返回非空对象但是有时却什么也没有返回，而在 Java8 中，**应该返回 Optional 而不是 null**。
+
+> **流**
+
+流可以在**内部进行迭代遍历**，简化代码。集合与流之间的显著差异在于**什么时候开始计算**。集合是急切创建的，必须得先把所有数据加载到内存中，才能对集合中的元素进行计算；而流是延迟创建的，流只有在需要其中的数据的时候，才会进行计算，并且仅仅提供需要的数据。
+
+**流与集合差别**：流只能遍历一次，集合可多次遍历。集合是外部迭代，流是内部迭代。
+
+可做的操作：筛选、过滤、切片、映射、查找与匹配、排序、计数、规约、分组等。
+
 ###### 反射
 
+**运行时动态获取类的信息以及动态调用对象的方法的功能称为反射机制**。每个类都有一个  **Class**  对象，包含了与类有关的信息。利用反射可以获取这个类对象，并以此分析类的信息，比如构造方法、普通方法、属性等等，甚至可以生成新的对象。
+
+> **反射优缺点**
+
+**优点：** 运行期类型的判断，动态加载类，提高代码灵活度。适用于一些系统类开发。
+
+**缺点：** 1. **性能瓶颈**：反射相当于一系列**解释操作**，通知 JVM 要做的事情，性能比直接代码低很多。2. **安全问题**：反射允许代码执行一些在正常情况下不被允许的操作（比如访问**私有**的属性和方法），破坏单例模式等。
+
+> **反射的应用场景**
+
+**反射最重要的用途就是开发各种通用框架**。(1) JDBC驱动加载；(2) 配置化框架开发，解析 XML 配置文件；(3) GSON 等序列化框架；(4) 读取注解信息。
+
+> **获取Class对象的方法**
+
+**方法1：通过对象或已知的类获取。**
+
+```java
+Employee e;
+ // 通过Object类的getClass()方法获取
+Class cl = e.getClass();   
+// 或者已经知道类则可以直接获取
+Class cl1 = Random.class;   // If you improt java.util.*;
+Class cl2 = int.class;
+Class cl3 = Double[].class;
+```
+
+**方法2：Class.forName() 这种方式适用于运行时动态获取 Class 对象，只需将类名作为 forName 方法的参数：**
+
+```java
+// 指定类名或接口名的字符串-全限定名
+String className = "java.util.Random";  
+// 使用静态方法Class.forName()，可能会抛出异常
+Class cl = Class.forName(className);    
+```
+
+> **利用反射分析类**
+
+java.lang.**reflect** 有三个类：**Field** (描述类的**域**)、**Method** (描述类的**方法**)和 **Constructor** (描述类的**构造器**)。利用这三个类可以分析一个**类的结构**。
+
+Method类有一个 ==**invoke() 方法**==，允许调用包装在当前 **Method对象** 中的方法。即调用 **Method 对象指向的方法**。它在**运行时**根据业务需要调用相应的方法，这种情况在运行时非常常见，只要通过反射获取到方法名之后，就可以调用对应的方法。
+
+invoke 方法有**两个参数**，第一个参数是**==要调用方法的对象==**，第二个参数是**==调用方法要传入的参数==**。如果有多个参数则用数组。如果调用的是 **static 方法**，invoke() 方法**第一个参数就用 null** 代替。
+
+**访问私有变量**：必须调用 **setAccessible(true)** 方法。使用 Class.**getDeclaredField**(String name) 或者 Class.**getDeclaredFields**() 获取到私有变量。
+
+**访问注解信息**：通过反射可以在**运行时获取到类、方法、变量和参数的注解信息**。
+
+```java
+Annotation[] annotations = aClass.getAnnotations();	// 全部注解
+Annotation annotation = aClass.getAnnotation(MyAnnotation.class);  // 指定注解
+```
+
+> **项目中用过反射吗？**
+
+用过，自定义的注解，使用反射获取注解信息。
+
 ###### 代理
+
+代理在 Java 中有着广泛的应用，比如 Spring AOP、Hibernate 数据查询、测试框架的后端 mock、RPC 远程调用、Java 注解对象获取、日志、用户鉴权、全局性异常处理、性能监控，甚至事务处理等。
+
+分为：静态代理、动态代理。
+
+如果**根据字节码的创建时机**来分类，可以分为==**静态代理和动态代理**==：
+
+- **静态代理**：在**程序运行前**就已经存在代理类的**字节码文件**，代理类和真实主题角色的关系在**运行前**就确定了。但是缺点是需要多个代理类，**难以维护**。
+- **动态代理**：字节码在程序**运行期间**由 **JVM** 根据**反射**等机制**动态的生成**，所以在**运行前并不存在代理类的字节码**文件。
+
+类加载过程主要分为五个阶段：**加载、验证、准备、解析、初始化**。可以在**加载**阶段通过动态代理机制生成字节码文件。动态代理就是想办法根据接口或目标对象，**计算出代理类的==字节码==，然后再==加载到 JVM 中==使用**。
+
+**常见字节码操作类库**：CGLIB、ASM 框架。
+
+实现动态代理的两种方式：
+
+1. 通过==**实现接口**==的方式：**JDK** 动态代理。
+2. 通过==**继承类**==的方式：**CGLIB **动态代理。
+
+> **JDK动态代理**
+
+JDK 动态代理主要涉及**两个类**：java.lang.reflect.**Proxy** 和 java.lang.reflect.**InvocationHandler**。
+
+编写一个代理类并实现 **InvocationHandler** 接口；在代理类中维护一个**目标对象**，这个**对象是被代理的对象**（真实主题角色）；在 **invoke** 方法中编写**方法调用的逻辑处理实现增强**。
+
+获取**动态生成的==代理类的代理对象==**须借助 **Proxy** 类的 **newProxyInstance** 方法。
+
+关键类：
+
+**(1) InvocationHandler接口**：仅一个 **invoke** 方法。这个区别与反射中的 invoke 方法。它定义了**代理对象调用方法时希望执行的动作（在此进行功能增强）**，用于集中处理在动态代理类对象上的方法调用。
+
+**(2) Proxy类**：newProxyInstance 方法需要**传入被代理类的类加载器**，被代理类实现的全部接口数组，以及增强之后的 InvocationHandler 实例。
+
+**原理解析**：反编译动态代理类，UserServiceProxy **继承**了 **Proxy 类**，并且实现了被代理的所有接口，以及 equals、hashCode、toString 等方法。可以看到之所以**==只能代理接口==**是因为**代理类本身已经 extends 了 Proxy，而 Java 是不允许多重继承的**，但是允许实现多个接口。每个方法都有一个 **Method** 对象来描述，Method 对象在 static **静态代码块**中创建，以 `m + 数字` 的格式命名。
+
+> **CGLIB动态代理**
+
+代理类需要实现方式实现 **MethodInterceptor** 接口，重写 **intercept** 方法，通过 **Enhancer** 类的**回调方法**来实现。
+
+> **JDK与CGLIB动态代理对比**
+
+**JDK 动态代理**：基于 Java **反射机制**实现，必须要**实现了==接口==**的业务类才能用这种办法生成代理对象。JDK 动态代理只需要实现 **InvocationHandler** 接口，重写 **invoke** 方法便可以完成代理的实现。JDK 的代理是利用**反射生成代理类 Proxyxx.class** 代理类字节码，并生成对象。JDK 动态代理之所以**只能代理接口**是因为**代理类本身已经 extends 了 Proxy，而 Java 是不允许多重继承的**，但是允许实现多个接口。
+
+JDK Proxy 的优势：最小化依赖关系，减少依赖意味着简化开发和维护，JDK 本身的支持可能比 CGLIB 更加可靠。可以与进行 JDK 版本进行**平滑升级**。
+
+**CGLIB 动态代理**：基于 **ASM** 机制实现，通过生成业务类的**==子类==**作为代理类。CGLib 采用了底层的字节码技术，其原理是通过字节码技术**为一个类创建子类**，并在子类中**采用方法拦截**的技术拦截所有父类方法的调用，通过**织入横切逻辑**来完成动态代理的实现。由于 CGLib 由于是采用动态创建子类的方法，所以 **final 方法**无法进行代理。
+
+**选择**：CGLib 在创建代理对象时所**花费的时间却比 JDK 多得多**（可以理解为生成字节码文件需要花费很多时间），所以对于**单例的对象**，因为**无需频繁创建**对象，用 CGLib 合适，反之使用 JDK 方式要更为合适一些。
 
 ##### 19.面试问题
 
 ###### 基础
 
-- sychronized 锁状态转换
 - 几种GC算法，**内存碎片如何解决**
-- synchronized锁升级机制
-- 说一下CountDownLatch和CyclicBarrier
 - hashcode 方法的底层实现
-- hashmap中如何计算下标
 - 内存泄漏问题，什么情况会引发（答了各种流未关闭，以及threadlocal中的key）
-- 多态及多态实现原理
-- 在java里面，final，finally，finalize它们三个有什么区别
 - 举几个你用过的exception的例子
-- java中，在hashmap中放入100个元素，如果希望不发生扩容，那么一开始声明的hashmap应该多大呢？
 
 ###### 集合
 
@@ -1187,13 +1990,13 @@ try {
 
 数据链路层**作用**：将**网络层**交下来的数据报（分组）封**装成帧发送到链路**上，同时也可以取出接收到的帧中的数据交给网络层。数据链路层的协议数据单元：**帧**。
 
-###### 信道类型
+> **信道类型**
 
 **点对点信道**：是**一对一通信**。因为**不会发生碰撞**，因此也比较简单，使用 **PPP 协议**进行控制。
 
 **广播信道**：是**一对多通信**，一个节点发送的数据能够被广播信道上**所有**的节点接收到。所有的节点都在同一个广播信道上发送数据，因此需要有专门的控制方法进行协调，**避免发生冲突**（冲突也叫碰撞）。主要有两种控制方法进行协调，一个是使用**信道复用**技术，一是使用 **CSMA/CD** 协议。
 
-###### 点对点信道的三个问题
+> **点对点信道的三个问题**
 
 **封装成帧**：将网络层传下来的分组添加**首部和尾部**，用于**标记帧的开始和结束**。**MTU：最大传送单元**---即帧的数据部分的长度上限。
 
@@ -1201,11 +2004,11 @@ try {
 
 **差错检测**：使用**循环冗余检验**（CRC）来检查比特差错。
 
-###### PPP协议
+> **PPP协议**
 
 互联网用户通常需要连接到某个 **ISP** 之后才能接入到互联网，PPP 协议是**用户计算机和 ISP 进行通信**时所使用的数据链路层协议。
 
-###### 局域网的数据链路层
+> **局域网的数据链路层**
 
 **广播信道**可以进行**一对多**的通信，而==**局域网**使用的就是**广播信道**==，局域网技术非常重要，所以看看**局域网**的数据链路层。 
 
@@ -1217,7 +2020,7 @@ MAC 地址是固化在**网络适配器**的 **ROM** 中的地址，所以又叫
 
 ##### 3. 网络层
 
-###### 网际协议IP
+> **网际协议IP**
 
 与 **IP 协议**配套使用的还有三个协议：
 
@@ -1267,7 +2070,7 @@ CIDR 的记法上采用在 **IP 地址**后面加上**==网络前缀长度==**�
 
 **IP 数据报**的首部的**源地址和目的地址**是**不变**的，而 **MAC 帧**首部中的 **MAC 源地址和目的地址**却是在**不断变换**的（通过不同的网络）。
 
-###### 地址解析协议ARP
+> **地址解析协议ARP**
 
 不管在网络层上使用的是什么协议，在实际**网络的链路**上传送数据帧时，最终还是必须使用**硬件地址**。
 
@@ -1283,9 +2086,7 @@ CIDR 的记法上采用在 **IP 地址**后面加上**==网络前缀长度==**�
 
 **ARP 欺骗**：ARP 欺骗就是通过**伪造 IP 地址和 MAC 地址**对实现 ARP 欺骗的，它能够在网络中**产生大量的 ARP 包**，来让网络堵塞。攻击主机只要持续的**发送假的 ARP 包**，让网络中的主机缓存错误的 IP-MAC 对应信息，造成网络中断或中间人攻击。ARP 攻击主要是在**局域网中的**，因为 ARP 包是不会垮网络传播的。所以划分 VLAN 能够减少当受到 ARP 攻击后，网络受影响的范围。
 
----
-
-###### IP数据报格式
+> **IP数据报格式**
 
 -  **版本**  : IPv4 或 IPv6。
 -  **首部长度**  : 占 **4 位**，因此最大值为 15。
@@ -1298,37 +2099,558 @@ CIDR 的记法上采用在 **IP 地址**后面加上**==网络前缀长度==**�
 -  **源地址**：4 字节。
 -  **目的地址**：4 字节。注意：**IP 包里面有 IP 地址，TCP 包里面只有端口信息，没有 IP 地址**。
 
+> **路由转发**
+
+在路由表中，对每一条路由，最重要的就是**：目的网络地址，下一跳地址**。
+
+**特点**：根据目的**网络地址**就能确定**下一跳路由器**，这样做的结果是： **IP 数据报最终一定可以找到目的主机所在目的网络上的路由器（可能要通过多次的间接交付）**。 只有到达**最后一个路由器**时，才试图向目的主机进行**直接交付**。
+
+Tips: 当**路由器**收到待转发的**数据报**，不是将下一跳路由器的 **IP 地址**填入 IP 数据报，而是送交下层的**网络接口软件**。 网络接口软件使用 **ARP** 负责将**下一跳路由器的 IP 地址**转换成**硬件地址**，并将此硬件地址放在链路层的 **MAC 帧的首部**，然后根据这个**硬件地址找到下一跳路由器**。
+
+> **网际控制报文协议ICMP**
+
+**ICMP 是检测传输网络是否通畅、主机是否可达、路由是否可用等网络运行状态的协议。**它不传输用户数据，但是对于**评估网络健康状态**非常重要。
+
+**报文格式**：它**封装**在 IP 数据报中，但是**不属于**高层协议。ICMP 报文的前 4 个字节是统一的格式，共有三个字段：即**类型**、**代码**和**检验和**。接着的 4 个字节的内容与 ICMP 的类型有关。 
+
+<img src="assets/image-20191219214607503.png" alt="image-20191219214607503" style="zoom:50%;" />
 
 
 
-##### 1. 基础面试题
+ICMP 报文的种类有**两种**：即 ==**ICMP 差错报告报文**和 **ICMP 询问报文**==。
+
+ICMP **差错报告**报文共有 4 种：**终点不可达**、**时间超过**、**参数问题**、 **改变路由（重定向）(Redirect)** 。
+
+ICMP **询问报文**有 2 种：回送请求和回答报文，时间戳和回答报文 。
+
+**Ping**：测试两台主机之间的**连通性**。Ping 的原理是通过向目的主机发送 **ICMP Echo 请求报文**，目的主机收到之后会发送 **Echo 回答报文**。Ping 会根据时间和成功响应的次数估算出数据包往返时间以及丢包率。
+
+> **路由选择协议**
+
+**路由协议**就是讨论**路由表**是怎么得到的。 互联网采用**分层次**的**路由选择协议**，所以可以把互联网划分为许多个小的==**自治系统**== **AS**：一**个 AS 对其他 AS 表现出的是一个单一的和一致的路由选择策略**。 
+
+互联网的**两大类**路由选择协议：
+
+- **内部网关协议 IGP**（Interior Gateway Protocol）：具体协议有 **RIP 协议，OSPF 协议**等。
+- **外部网关协议 EGP** (Extern Gateway Protocol）：具体协议有 **BGP**。
+
+<img src="assets/image-20191219214837958.png" alt="image-20191219214837958" style="zoom:35%;" />
+
+一个**自治系统内部**可以使用**不同的内部网关协议**，如 **RIP 协议、OSPF 协议**。两个**自治系统之间**使用**外部网关协议**进行路由选择，如 **BGP 协议**。
+
+> **内部网关协议之RIP**
+
+RIP 是一种**分布式的、==基于距离向量==**的路由选择协议。 RIP 协议要求网络中的**每一个路由器**都要维护从**它自己到其他每一个**目的网络的**距离记录**。RIP 认为一个好的路由就是它通过的**路由器的数目少**，即“**距离短**”。 **RIP 允许一条路径最多只能包含 ==15== 个路由器**。 “距离”的最大值为 16 时即相当于**不可达**。RIP 选择一个具有**最少路由器的路由**（即**最短路由**），哪怕还存在另一条**高速**(低时延)但路由器较多的路由。可见 **RIP 只适用于==小型互联网==**。 **RIP 不能在两个网络之间同时使用多条路由**。
+
+**RIP 的三个特点**：仅和**相邻路由器**交换信息；交换的信息是当前本路由器知道的**全部信息**，即自己的路由表；按**固定的时间间隔**交换路由信息，如每隔 30 秒。当网络拓扑发生变化时，路由器也及时向**相邻路由器**通告拓扑变化后的路由信息。
+
+**RIP 协议特点**：==**好消息传播得快，坏消息传播得慢**==。 RIP 存在的一个问题：当网络出现**故障**时，要经过比较长的时间 (例如数分钟) 才能将此信息传送到所有的路由器（坏消息传的慢）。仅适用于规模小的网络。 其最大的优点是实现简单，开销较小。
+
+**路由表的建立（**通过距离向量算法**）**：路由器在刚刚开始工作时，它的路由表是空的，**只知道到直接连接的网络的距离**（此距离定义为 1）。以后**每一个路由器也只和数目非常有限的相邻路由器交换并更新路由信息。 经过若干次更新后，所有的路由器最终都会知道到达==本自治系统中任何一个网络==的最短距离和下一跳路由器的地址**。
+
+**距离向量算法**的基础就是 **==Bellman-Ford==** 算法。要点：设 X 是结点 A 到 B 的最短路径上的一个结点。 若把路径 A→B 拆成两段路径 A→X 和 X→B，则每一段路径 A→X 和 X→B 也都分别是结点 A 到 X 和结点 X 到 B 的最短路径。
+
+RIP 协议使用运输层的用户数据报 **UDP** 进行传送。
+
+> **内部网关协议之OSPF**
+
+**开放最短路径优先 OSPF**。**适用于==规模较大==的网络**。 **OSPF** 最主要的特征就是使用**分布式的链路状态控制协议**，而不是像 RIP 那样的**距离向量协议**。
+
+和 RIP 不同的是： （1）向本自治系统中**所有路由器**发送信息，这里使用的方法是**洪泛法**；（2）发送的信息就是与本路由器**相邻**的所有路由器的链路状态，但这只是路由器所知道的**部分信息**；（3）只有当**链路状态发生变化**时，路由器才向所有路由器使用**洪泛法**发送此消息。
+
+**链路状态数据库**：由于各路由器之间**频繁地**交换链路状态信息，因此**所有的路由器**最终都能建立一个**链路状态数据库**。 这个数据库实际上就是==**全网的拓扑结构图**==，它在**全网范围内是一致**的（这称为链路状态数据库的同步）。 OSPF 的链路状态数据库能**较快地进行更新**，使各个路由器能及时更新其路由表。OSPF 的**更新过程收敛得快**是其重要的**优点**。 
+
+OSPF 简单说就是**两个相邻的路由器**通过发**报文的形式成为邻居关系**，邻居再**相互发送链路状态**信息形成邻接关系，之后各自根据**最短路径算法**算出路由，放在 **OSPF 路由表**，OSPF 路由与其他路由比较后优的加入**全局路由表**。OSPF **不用 UDP** 而是**直接使用 IP 数据报**传送，可以减少路由信息的通信量。
+
+> **外部网关协议之BGP**
+
+BGP 即边界网关协议，BGP 是**不同自治系统的路由器之间**交换路由信息的协议，采用了**路径向量路由选择协议**。 BGP 只能尽量寻找一条**比较好**的路由，而**不是最佳**路由。
+
+**每个 AS** 都必须配置 **BGP 发言人**，通过在两个相邻 BGP 发言人之间**建立 TCP 连接**来交换路由信息。
+
+> **路由器**
+
+**路由器**是一种具有**多个输入端口和多个输出端口**的专用计算机，其任务是**转发分组**。也就是说，将**路由器某个输入端口收到的分组**，按照分组要去的目的地（即目的网络），把该**分组从路由器的某个合适的输出端口转发给下一跳路由器**。
+
+路由器是一种典型的==**网络层**==设备，所以路由器只有下面**三层协议**，因为路由器位于网络核心中，不需要为进程或者应用程序提供服务，因此也就不需要传输层和应用层。路由器从功能上可以划分为：**路由选择和分组转发**，转发分组只涉及到**网络层**。
+
+> **交换机和路由器的区别**
+
+(1) 集线器、**交换机**都是做**端口扩展的**，就是**扩大局域网**(通常都是以太网)的接入点，也就是能让局域网可以连进来更多的电脑。而**路由器**是用来做**网间连接**，也就是用来连接不同的局域网络。
+
+(2) **交换机**工作在**中继层**，交换机**根据 MAC 地址寻址**。路由器工作在**网络层**，根据 **IP 地址寻址**，路由器可以处理 TCP/IP 协议，而交换机**不可以**。IP 地址是在软件中实现，MAC 地址通常是硬件自带的。
+
+(3) 路由器提供**防火墙**的服务，交换机不能提供该功能。路由器仅仅转发特定地址的数据包，不传送不支持路由协议的数据包传送和未知目标网络数据包的传送，从而可以防止广播风暴。
+
+> **IPv6**
+
+IPv6 数据报由两大部分组成： **基本首部** (base header) **有效载荷**(payload)。有效载荷也称为净负荷，有效载荷允许有零个或多个扩展首部 (extension header)，再后面是数据部分。 
+
+IPv6 将首部长度变为**固定的 40 字节**，称为**基本首部**。把首部中不必要的功能取消了，使得 IPv6 首部的字段数减少到只有 8 个。
+
+采用 **冒号十六进制记法** 表示。把每个 **16 位**的值用**十六进制**表示，各值之间用**冒号**分隔。
+
+IPV6 的过渡：**双协议栈、隧道技术**。
+
+> **VPN**
+
+有三个专用地址块：
+
+- **10.0.0.0 \~ 10.255.255.255**
+- **172.16.0.0 \~ 172.31.255.255**
+- **192.168.0.0 \~ 192.168.255.255**
+
+在互联网中的**路由器对目的地址是专用地址的数据报一律不进行转发**。
+
+使用 **==IP 隧道技术==**实现 VPN。
+
+> **网络地址转换NAT**
+
+**网络地址转换 NAT**需要在专用网连接到互联网的**路由器**上安装 **NAT 软件**。专用网内部的主机使用**本地 IP 地址**又想和互联网上的主机通信时，可以使用 **==NAT 来将本地 IP 转换为全球 IP==**。
+
+**网络地址转换的过程**：内部主机 A 用本地地址 IPA 和互联网上主机 B 通信所发送的数据报必须经过 **NAT 路由器**。 NAT 路由器将数据报的**源地址 IPA 转换成全球地址 IPG**，并把转换结果记录到 **NAT 地址转换表**中，目的地址 IPB 保持不变，然后发送到互联网。 NAT 路由器收到主机 B 发回的数据报时，知道数据报中的源地址是 IPB 而目的地址是 IPG。 根据 NAT 转换表，NAT 路由器将**目的地址 IPG 转换为 IPA**，转发给最终的内部主机 A。 
+
+现在常用的 NAT 转换表把传输层的==**端口号**==也用上了，使得多个专用网内部的主机**共用一个全球 IP 地址**。使用端口号的 NAT 也叫做网络地址与端口转换 **NAPT**。
+
+##### 4. 传输层
+
+**网络层和运输层的区别**：**网络层**是为**主机之间**提供逻辑通信，而**运输层**为**应用进程**之间提供端到端的逻辑通信。
+
+传输层协议：UDP、TCP。
+
+基于 UDP 应用层协议：DNS、DHCP、RIP 等。
+
+基于 TCP 应用层协议：HTTP、SMTP、FTP、POP3 等。
+
+> **端口**
+
+端口用一个 16 位**端口号**进行标志，允许 **65535** 个不同端口。**进程**要互相通信，**不仅必须知道对方的 IP 地址**（为了找到对方的计算机），**而且还要知道对方的端口号**。
+
+端口范围：0-49151（服务器端口）、49152-65535（客户端端口）。0-1024 熟知端口。
+
+> **UDP协议**
+
+**用户数据协议 UDP **是**无连接**的，它在 IP 层的数据报服务上只增加了：复用和分用的功能、差错检测的功能。如果接收方 UDP 发现收到的报文中的目的端口**不正确**（即不存在对应端口的进程），就丢弃该报文，并由**==网际控制报文协议 ICMP==**发送“**端口不可达**”差错报文给发送方！！
+
+**由于 UDP 的通信是无连接的，因此==不需要使用套接字==**。 
+
+**UDP首部格式**：数据报有两个字段：**首部字段与数据字段**。首部字段长度仅 8 字节，仅含源端口，目的端口，长度，校验和。（注意不含 IP 地址）
+
+**UDP协议特点**：(1) **UDP 是无连接的**；(2) **UDP 使用尽最大努力交付，即不保证可靠交付**；(3) **UDP 是面向报文的**；(4) **UDP ==没有拥塞控制==**；(5) **UDP 支持一对一、一对多、多对一和多对多的交互通信**；(6) **UDP 的首部开销小**。
+
+**UDP可靠传输**：传输层无法保证数据的可靠传输，只能**通过应用层**来实现了。实现的方式可以参照 TCP 可靠性传输的方式，只是实现不在传输层，实现转移到了**应用层**。主要方式：
+
+- 添加 **seq/ack 机制**，确保数据发送到对端。
+- 添加发送和**接收缓冲区**，配合**超时重传机制**进行丢失数据的重传。
+
+相关的协议：**RUDP**、RTP、UDT 等。
+
+> **TCP协议**
+
+**传输控制协议TCP**是**面向连接的运输层协议**，**每一条 TCP 连接只能有两个端点** (endpoint)，**每一条 TCP 连接只能是点对点**的（**一对一**）。
+
+**每一条 TCP 连接唯一地被通信两端的两个端点（即两个套接字）所确定**。
+
+同一个 **IP 地址**可以有多个**不同的 TCP 连接**，而**同一个端口号**也可以出现在**多个不同的 TCP 连接**中。
+
+TCP 为了实现与 UDP 不同的**可靠传输**。需要一些特定的功能：**停止等待协议**、**连续 ARQ 协议 、滑动窗口协议**（**TCP协议的精髓**）。
+
+> **TCP报文格式**
+
+一个 TCP 报文段分为**首部和数据**两部分。TCP 报文段首部的**前 20** 个字节是**固定**的，后面有 4N 字节是根据需要而增加的选项 (N 是整数)。因此 TCP 首部的最小长度是 **20 字节**。
+
+![1574678682438](assets/1574678682438.png)
+
+- **==源端口和目的端口==**：各占 **2 字节**。端口是运输层与应用层的服务接口，运输层的**复用和分用**功能都要通过端口才能实现。 
+- **==序号 seq==** ：占 **4 字节**。TCP 连接中传送的数据流中的**每一个字节**都有一个**序号**。序号字段的值则指的是**本报文段**所**发送的**数据的**第一个字节**的序号。 
+- **==确认号 ack==**：占 4 字节，是**==期望==**收到**对方**的**下一个报文段**的数据的**第一个字节**序号。 若确认号 **ack = N**，则表明到序号 **N - 1** 为止的所有数据都**已正确收到**。
+- **数据偏移**：即**首部长度**。占 4 位，它指出当前 TCP 报文段的**数据起始处**距离 TCP 报文段的起始处有多远。"数据偏移"的单位是 32 位字（以 4 字节为计算单位）。 
+- **紧急 URG**：当 URG = 1 时，表明紧急指针字段**有效**。它告诉系统此报文段中有紧急数据，应尽快传送(相当于高优先级的数据)。 
+- **==确认 ACK 标志位==**：只有当 **ACK = 1** 时**确认号字段才有效**。当 ACK = 0 时，确认号无效。 
+- **推送 PSH**：接收 TCP 收到 PSH = 1 的报文段，就尽快地交付接收应用进程，而不再等到整个缓存都填满了后再向上交付。 
+- **复位 RST**：当 RST = 1 时，表明 TCP 连接中出现严重差错（如由于主机崩溃或其他原因），必须释放连接，然后再重新建立运输连接。 
+- ==**同步 SYN 标志位**==：（**Syn**chronize Sequence Numbers）同步 **SYN = 1** 表示这是一个==**连接请求或连接接受**==报文，在**连接时**用来**同步序号**。   
+- **==终止 FIN 标志位==**：用来**释放**一个连接。**FIN = 1** 表明此报文段的**发送端**的数据已**发送完毕**，并**要求释放连接**。 
+- **==窗口==**：占 2 字节，是用来**对方设置**发送窗口大小的依据，单位为字节。窗口字段明确指出了现在**允许对方发送**的数据量，窗口值常在**动态**变化着。TCP 根据对方给出**的窗口值**和当前**网络拥塞的程度**来决定一个报文段应**包含多少个字节**（UDP 发送的报文**长度是应用进程给出**的）。TCP 并不关心应用进程一次把多长的报文发送到 TCP 的缓存中，而是根据**对方给出的窗口值**和当前网络拥塞的程序来决定一个报文段应该包含多少个字节。如果缓存的数据块太长可以划分短一些再传送。
+- **校验和**：占 2 字节。检验和字段检验的范围包括**首部和数据**这两部分。在计算检验和时，临时在 TCP 报文段的前面加上 12 字节的伪首部。
+- **选项**：长度可变。
+- **填充**：这是为了使整个首部长度是 **4 字节**的**整数倍**。 
+
+> **TCP如何保证可靠传输**
+
+主要是基于 **ARQ协议（停止等待 ARQ  协议、连续 ARQ 协议）、滑动窗口协议**。
+
+==**注意关系**==：ARQ 协议是**自动重传请求**（Automatic Repeat-reQuest）。包含**停止等待 ARQ** （信道利用率低） 和**连续 ARQ**（信道利用率高），**ARQ** 协议实现**连续发送**是**基于滑动窗口协议**的。除此之外滑动窗口还可以用于**流量控制**。
+
+**自动重传请求**（Automatic Repeat-reQuest，ARQ）是 OSI 模型中数据链路层和传输层的错误纠正协议之一。它通过使用**确认和超时**这两个机制，在不可靠服务的基础上实现可靠的信息传输。如果发送方在发送后一段时间之内没有收到确认帧，它通常会重新发送。**ARQ 包括停止等待 ARQ 协议和连续 ARQ 协议**。
+
+> **ARQ协议**
+
+ARQ 协议的核心就是**自动重传**。
+
+包含：停止等待 ARQ 协议、连续 ARQ 协议。
+
+**停止等待 ARQ 协议**特点：**停止等待**。发送方每次只发送**一个**分组，在**收到确认**后再发送下一个分组。**编号**。对发送的每个分组和确认都进行**编号**。**自动重传请求**。发送方为**每个发送的分组**设置一个**超时计时器**。若超时计时器超时，发送方会**自动重传**分组。**简单**。但信道利用率太低。
+
+**停止等待协议的要点就是对每个分组都进行编号，且每发送完一个分组就停止发送，等待对方的确认，在收到确认后再发送下一个分组**。每个分组发送之后都有一个**超时计时器**，如果超时没有确认那么就会**超时重传**。
+
+连续ARQ 协议：为了提高传输效率，发送方可以不使用低效率的停止等待协议，而是采用**流水线传输**。要点：==**自动请求重传(ARQ) + 流水线**==。连续 ARQ 协议就是在停止等待 ARQ 协议的基础上，发送方一次可以发出**多个分组**。同时使用**滑动窗口协议**控制发送方和接收方所能发送和接收的分组的**数量和编号**。发送方每收到一个确认，就把发送窗口向前滑动。**接收方**一般采用**累积确认**的方式。不必对分组逐个确认，而可以对按序到达的最后一个分组进行确认表示到这个分组为止的所有分组**都已正确**收到了。**超时重传**则采用**回退 N**（Go-Back-N）方法进行。表示需要**再退回来重传已发送过的 N 个分组**。
+
+连续 ARQ 协议是**基于滑动窗口协议**的。
+
+> **滑动窗口协议**
+
+**滑动窗口协议**在在发送方和接收方之间各自维持一个**滑动窗口**，发送发是**发送窗口**，接收方是**接收窗口**，而且这个窗口是随着时间变化可以向前**滑动**的。
+
+窗口是**缓存**的一部分，用来暂时存放**字节流**。发送方和接收方各有一个窗口，**接收方**通过 TCP 报文段中的**窗口字段**告诉发送方自己的窗口大小，发送方根据这个值和其它信息**设置自己的窗口大小**。TCP 的滑动窗口是以**字节**为单位的。
+
+- **发送窗口**表示：即使在**没有收到确认**的情况下，也可以**连续把窗口内的数据**全部发送出去。
+- **接收窗口**表示：**只允许**接收**落入窗口内**的数据。
+
+真正的发送窗口值的大小还取决于网络的**拥塞情况**，**发送窗口的上限值 = Min (接收方窗口值，拥塞窗口值)**。
+
+> **TCP流量控制**
+
+**流量控制**就是**控制发送方发送速率**，保证**接收方**来得及接收。**接收方**发送的**确认**报文中的**窗口字段**可以用来**控制发送方窗口值**大小（**利用==滑动窗口==实现流量控制**），从而影响发送方的发送速率。将窗口字段设置为 **0**，则发送方**不能**发送数据。
+
+> **TCP拥塞控制**
+
+网络拥塞往往是由**许多因素**引起的，这是一个非常复杂的问题。
+
+**流量控制与拥塞控制的对比**：
+
+|                        流量控制                        |                           拥塞控制                           |
+| :----------------------------------------------------: | :----------------------------------------------------------: |
+| 抑制**发送端发**送数据的速率，以使接收端**来得及接收** | **防止**过多的数据**注入到网络**中，使网络中的路由器或链路**不致过载** |
+|      是**点对点**通信量的控制，是**端到端**的问题      | 是一个**全局性**的过程，涉及到与降低网络传输性能有关的所有因素 |
+|                  使用**滑动窗口**实现                  | 使用**拥塞窗口变量** + **拥塞控制算法**实现，还要**配合滑动窗口** |
+
+**滑动窗口与拥塞窗口的区别**：**滑动窗口**是接收窗口，就是 TCP 头的那个**窗口**，可以理解为一块**内存**，一方面他要接收数据，一方面他要向应用层交付数据。而拥塞窗口是一个**变量**。
+
+**拥塞控制**：基于**拥塞窗口变量+几种拥塞控制算法**实现。
+
+TCP==**发送方**==维持一个**==拥塞窗口 cwnd==** (Congestion Window) 的变量。**发送端**利用**拥塞窗口**根据网络的拥塞情况**调整发送的数据量**。==发送方让自己的**发送窗口**取为**拥塞窗口和接收方的接受窗口**中**较小的一个**。==
+
+> **TCP拥塞控制的四种算法**
+
+(1) **慢开始**：每经过一个**传输轮次**，拥塞窗口值就==**加倍**==，即 **==cwnd = cwnd * 2==**，直到达到慢开始门限 ssthresh。
+
+(2) **拥塞避免**："**拥塞避免**"是说在拥塞避免阶段把拥塞窗口**控制为按线性规律增长**，使网络比较**不容易**出现拥塞。 当 **==cwnd > ssthresh==** 时，停止使用慢开始算法而改用**拥塞避免算法**。**超时之前**，每经过一个**传输轮次**，拥塞窗口 **==cwnd = cwnd + 1==**。这就使拥塞窗口 cwnd 按**线性规律缓慢增长**。当网络**出现拥塞**时，(1) ssthresh = max (cwnd / 2，2)**：**降低门限值**（取一半）**。**（2）cwnd = 1**： 拥塞窗口**重新变为 1**。**（3）执行慢开始算法**：重新执行**慢开始**。
+
+(3) **快重传**：**发送方**只要一连收到**三个重复确认**，就知道接收方确实**没有收到**报文段，因而应当**立即进行重传**（即“**快重传**”），这样就**不会出现超时**，发送方也不就会误认为出现了网络拥塞。因为能够收到三个确认说明应该也没有阻塞，所以用快重传。
+
+(4) **快恢复**：当发送端收到连续**三个重复的确认**时，由于发送方现在认为网络**很可能==没有==发生拥塞**，因此现在**不需要**执行慢开始算法，而是执行**快恢复算法**。**（1）慢开始门限 ssthresh = 当前拥塞窗口 cwnd / 2；（2）新拥塞窗口 cwnd = 慢开始门限 ssthresh ；（3）开始执行拥塞避免算法，使拥塞窗口缓慢地线性增大。** 
+
+总结：AMID：**加法增大、乘法减小**。
+
+> **TCP连接建立**
+
+仅能客户端发起连接。
+
+<img src="assets/1574741516560.png" alt="1574741516560" style="zoom:38%;" />
+
+简化一点（**面试用**）：相当于客户端和服务端**都给**对方发送了 **SYN 和 ACK** 信号。
+
+<img src="assets/image-20200522173211093.png" alt="image-20200522173211093" style="zoom: 45%;" />
+
+> **为什么要进行第三次？只握手两次不行？**
+
+**原因 1：三次握手最主要的目的就是双方确认自己与对方的发送与接收是正常的。**
+
+- 第一次握手：Client 什么都不能确认；Server 确认了对方发送正常，自己接收正常。
+
+- 第二次握手：Client 确认了：自己发送、接收正常，对方发送、接收正常；Server 确认了：对方发送正常，自己接收正常。
+
+- 第三次握手：Client 确认了：自己发送、接收正常，对方发送、接收正常；Server 确认了：自己发送、接收正常，对方发送、接收正常。
+
+三次握手是为了确定客户端与服务端都能**正常收发**。
+
+**原因 2：进行第三次握手是为了防止失效的连接请求到达服务器，让服务器错误再次打开连接，占用服务器资源。**
+
+客户端发送的连接请求如果在网络中==**滞留**==，那么就会隔很长一段时间才能收到服务器端发回的**连接确认**。客户端等待一个==**超时重传**==时间之后，就会**重新请求连接**。但是这个滞留的连接请求最后还是会到达服务器，如果不进行三次握手，那么服务器就会**打开两个连接**。如果有第三次握手，客户端会**忽略服务**器之后发送的对滞留连接请求的连接确认（因为序号这些对应不上），不进行第三次握手，因此就不会再次打开连接。
+
+> **TCP释放连接**
+
+通信的双方**都可**释放连接，释放过程是**四报文握手**。
+
+<img src="assets/1574741905218-1599200445226.png" alt="1574741905218" style="zoom:60%;" />
+
+四次挥手流程简化版（面试用）：相当于客户端和服务端**都给**对方发送了 **FIN 和 ACK** 信息，只不过服务端的 分成了两次，所以变成了四次挥手。
+
+<img src="assets/image-20200804233105341.png" alt="image-20200804233105341" style="zoom:47%;" />
+
+> **TIME_WAIT与CLOSE_WAIT **
+
+**TIME_WAIT** 和 **CLOSE_WAIT** 分别表示主动关闭与被动关闭产生的**阶段性状态**，如果在线服务器大量出现这两种状态则会加重机器负载，影响有效的连接。
+
+四次挥手之后之后**客户端**进入 **Time-Wait 状态**，等待 **==2MSL==** 的时间。**MSL** 中文可以译为“**==报文最大生存时间==**”，它是任何报文在网络上**存在的最长时间**，超过这个时间报文将被**丢弃**。一般时间长度是 30 秒。等待 2MSL 时间主要**目的**是**怕最后一个 ACK** 包对方**没收到**，那么对方在**超时后将重发第三次握手的 FIN 包**，主动关闭端接到**重发的 FIN 包后可以再发一个 ACK 应答包**，从而确保四次挥手完成。在 TIME_WAIT 状态时**两端的端口不能使用**，要等到 2MSL 时间结束**才可继续使用**。当连接处于 2MSL 等待阶段时任何迟到的报文段都将被**丢弃**。
+
+**客户端**接收到服务器端的 **FIN 报文**后进入此状态，此时**并不是直接进入 CLOSED** 状态，还需要等待一个**时间计时器**设置的时间 **2MSL**。这么做有两个理由：
+
+- **确认被动关闭方能够顺利进入 CLOSED 状态**。也就是确保**最后一个确认报文**能够到达。如果 **B 没收到** A 发送来的**确认报文**，那么就会**重新发送连接释放**请求报文，A 等待一段时间就是为了处理这种情况的发生。
+- **防止失效请求**。等待一段时间是为了让本连接持续时间内所产生的**所有报文都从网络中消失**，使得下一个新的连接**不会出现旧的连接**请求报文。
+
+**CLOSE_WAIT：被动要求关闭的机器收到对方请求关闭连接的 FIN 报文，在第一次 ACK 应答后进入马上进入**。
+
+**CLOSE_WAIT 状态**。这种状态其实是在**等待关闭**，并且通知应用程序**发送剩余数据**，处理现场信息，关闭相应资源。
+
+**注意**：由于 TIME_WAIT 状态无法真正释放句柄资源，此期间 Socket 中使用的本地端口在默认情况下是不能再被使用，对于高并发服务器来说，这会极大的限制有效连接的创建数量，成为性能瓶颈。所以建议将**高并发服务器的 TIME_WAIT 超时时间调小**。
+
+> **TCP连接限制**
+
+TCP 连接的建立是通过**文件描述符（fd）**完成的，通过**创建套接字获取一个 fd**，然后服务端和客户端需要基于获得的 fd 调用不同的函数分别进入监听状态和发起连接请求。**fd 的数量**决定了服务端进程能创建连接的数量。所以需要注意调整服务端进程和操作系统所支持的**最大文件句柄数**。
+
+##### 5. 应用层
+
+|       应用       | 应用层协议 |  端口号   | 传输层协议  |             备注             |
+| :--------------: | :--------: | :-------: | :---------: | :--------------------------: |
+|   **域名解析**   |  **DNS**   |  **53**   | **UDP/TCP** | 长度超过 512 字节时使用 TCP  |
+| 动态主机配置协议 |  **DHCP**  |   67/68   |   **UDP**   |                              |
+| 简单网络管理协议 |    SNMP    |  161/162  |     UDP     |                              |
+|   文件传送协议   |  **FTP**   | **20/21** |   **TCP**   | **控制连接 21，数据连接 20** |
+|   远程终端协议   |   TELNET   |  **23**   |     TCP     |                              |
+|  超文本传送协议  |  **HTTP**  |  **80**   |   **TCP**   |                              |
+| 简单邮件传送协议 |  **SMTP**  |    25     |   **TCP**   |                              |
+|   邮件读取协议   |  **POP3**  |    110    |   **TCP**   |                              |
+| 网际报文存取协议 |  **IMAP**  |    143    |   **TCP**   |                              |
+
+> **域名系统DNS**
+
+域名到 IP 地址的解析是由**若干个域名服务器**程序完成的。域名服务器程序在**专设的结点**上运行，运行该程序的机器称为**域名服务器（DNS 服务器）**。 
+
+**域名解析过程**：**(1) 找本地缓存；(2) 找本机的 hosts 文件；(3) 找 DNS 服务器**。**主机向==本地域名服务器==的查询一般都是采用==递归查询==**。如果主机所询问的**本地域名服务器不知道**被查询域名的 IP 地址，那么本地域名服务器就以 **DNS 客户的身份**，向其他**根域名服务器**继续发出查询请求报文。每个**域名服务器**都维护一个**高速缓存**，存放最近用过的名字以及从何处获得**名字映射信息**的记录。
+
+**DNS 传输协议**：DNS 可以使用 **UDP 或者 TCP** 进行传输，使用的端口号都为 **53**。**大多数情况下 DNS 使用 ==UDP== 进行传输**。为啥用 UDP？UDP 速度**更快**；DNS 请求通常非常小；虽然不可靠但是可以在应用层进行可靠性保障。如果返回的响应超过 512 字节则用 TCP 传输。
+
+> **文件传送协议FTP**
+
+基于 TCP 协议传输。使用两个连接，**控制连接**在会话期间一直开启，用于控制；**数据连接**用于传输实际文件。
+
+> **动态主机配置协议DHCP**
+
+DHCP 基于 **UDP** 工作，DHCP **服务器**运行在 67 号端口， DHCP **客户**运行在 68 号端口。
+
+**需要 IP 地址**的主机在启动时就向 DHCP 服务器**广播**发送**发现报文**（**DHCPDISCOVER**），这时该主机就成为 DHCP 客户。本地网络上**所有主机**都能收到此广播报文，但只有 **DHCP 服务器才回答**此广播报文。
+
+DHCP 服务器先在其数据库中查找该计算机的**配置信息**。若找到，则返回找到的信息。若找不到，则从服务器的 IP 地址池 (address pool) 中取一个地址分配给该计算机。DHCP服务器的回答报文叫做**提供报文（DHCPOFFER）**，DHCP 服务器返回信息是以**单播方式**进行。
+
+> **邮件协议**
+
+邮件协议包含**发送协议**和**读取协议**，**发送协议**常用 **SMTP**，**读取协议**常用 **POP3 和 IMAP**。几个协议都**基于 TCP**。
+
+##### 6. 网络安全
+
+> **加密算法**
+
+**对称加密算法**：指加密和解密使用相同密钥的加密算法。对称加密算法用来对敏感数据等信息进行加密，常用的算法包括**DES**、**AES**、**RC4**、RC5、RC6 等。
+
+**非对称加密算法**：指加密和解密使用不同密钥的加密算法，也称为公私钥加密。假设两个用户要加密交换数据，双方交换公钥，使用时一方用对方的公钥加密，另一方即可用自己的私钥解密。如 **RSA**、**DSA**（数字签名用）、**ECC**（移动设备用）等。    
+
+> **跨站脚本攻击XSS**
+
+关键是脚本，利用**恶意脚本发起攻击**。跨站脚本攻击（Cross-Site Scripting, XSS）**指黑客向正常用户请求的 HTML 页面中插入恶意脚本，从而可以执行任意脚本**。XSS 可以将**代码**注入到**用户浏览的网页**上，这种代码包括 **HTML** 和 **JS** 代码，从而达到攻击的目的，如盗取用户的 **cookie**，改变网页的 DOM 结构，重定向到其他网页等。
+
+主要分为：反射型 XSS、存储型 XSS、DOM 型 XSS。
+
+**防范手段**：“**所有用户输入都是不可信的**。”防范方式很简单，**坚决不要相信用户的任何输入**，并**过滤**掉输入中的所有特殊字符。这样就能消灭绝大部分的 XSS 攻击。
+
+- **I 设置 Cookie 为 HttpOnly**：设置了 HttpOnly 的 Cookie 可以**防止 JavaScript 脚本**调用。
+- **II 过滤或转义用户输入数据**：例如将 `<` 转义为 `&lt;`，将 `>` 转义为 `&gt;`，从而避免 HTML 和 Jascript 代码的运行。
+
+> **跨站请求伪造CSRF**
+
+跨站请求伪造（Cross-site request forgery，CSRF），是攻击者通过一些技术手段欺骗用户的浏览器去**访问一个自己曾经认证过的网站**并执行一些操作（如发邮件，发消息，甚至财产操作如转账和购买商品）。由于浏览器**曾经认证**过，所以被访问的网站会认为是**真正**的用户操作而去执行。要点是利用已经登录的信息。
+
+总结一下 CSRF 攻击流程：用户登录受**信任网站A**，并在本地**生成 Cookie**。用户在**不登出A**的情况下访问**危险网站 B**，这时候恶意网站就会**利用 cookie** 去发起恶意请求。
+
+**防范**：
+
+- **I 使用 Token 验证**：要求用户浏览器提供**不保存在 Cookie** 中，并且攻击者无法伪造的数据作为校验。所以可以**采用 token（不存储于浏览器）认证**。
+- **II 人机交互**：配合**验证码进行验证**。因为 CSRF 攻击是在用户无意识的情况下发生的，所以要求用户**输入验证码**可以让用户知道自己正在做的操作，所以银行转账这些一般都会有短信验证码。
+- **III 检查 Referer 首部字段**：**Referer 首部字段**位于 HTTP 报文中，用于**标识请求来源**的地址。检查这个**首部字段**并要求**请求来源**的地址在**同一个域名**下，可以极大的防止 CSRF 攻击。Referer 指的是页面请求来源。意思是，只接受本站的请求，服务器才做响应；如果不是就拦截。
+
+XSS 与 CSRF 的区别：
+
+**XSS 是在正常用户请求的 HTML 页面中执行黑客植入的恶意代码，CSRF 是黑客直接盗用用户浏览器中的登录信息，冒充用户去执行黑客的操作。**
+
+**XSS 的问题出在用户数据没有过滤或者转义；CSRF 的问题出在 HTTP 接口没有防范不受信任的调用。**
+
+> **SQL注入攻击**
+
+**SQL 注入攻击是未将代码与数据进行严格的隔离，导致在读取用户数据的时候，错误的把数据作为代码的一部分执行，从而导致安全性问题**。
+
+**防范**：
+
+- **I 合理使用框架，使用预编译语句**。MyBatis 框架的 **#{} 绑定参数**能防止 SQL 注入。
+- **II 输入过滤**：过滤用户输入参数中的特殊字符。
+
+> **DOS攻击**
+
+其目的在于使目标电脑的网络或系统资源耗尽，使服务暂时中断或停止，导致其正常用户无法访问。
+
+典型的 DOS 攻击方式如下：
+
+- **SYN Flood** ： 这是一种利用 **TCP 协议**缺陷，发送大量伪造的 **TCP 连接请求**，从而使得被攻击方资源耗尽（CPU满负荷或内存不足）的攻击方式。
+- **CC 攻击**：CC 攻击是目前应用层攻击的主要手段之一，借助代理服务器生成指向目标系统的合法请求，实现伪装和 DDoS。
+
+**防范**：
+
+- 限制同时打开 **SYN 的半连接**数目，缩短 SYN 半连接的 time out 时间。
+- 正确设置防火墙。
+- 阿里巴巴的安全团队在实战中发现，DDoS 防御产品的核心是**检测技术和清洗技术**。检测技术就是**检测**网站是否正在遭受 DDoS 攻击，而清洗技术就是**清洗掉异常流量**。
+
+> **DNS劫持**
+
+DNS 劫持攻击亦称为 DNS 重定向，攻击者**劫持用户的 DNS 请求，错误地解析网站的 IP 地址**，用户试图加载，从而将其重定向到网络钓鱼站点。
+
+##### 7. HTTP
+
+> **HTTP报文格式**
+
+**请求报文**：
+
+<img src="assets/image-20191229152139723.png" alt="image-20191229152139723" style="zoom: 50%;" />
+
+GET 请求的**参数**直接在 URL 中，没有请求体，而 POST 请求的参数通常在请求体中。响应报文结构如下：
+
+<img src="assets/image-20191229152226696.png" alt="image-20191229152226696" style="zoom: 50%;" />
+
+> **HTTP方法**
+
+客户端发送的 **请求报文** 第一行为请求行，包含了**方法**字段。
+
+|    方法     |            说明            | 支持的HTTP协议版本 |
+| :---------: | :------------------------: | :----------------: |
+|   **GET**   |        **获取资源**        |      1.0、1.1      |
+|  **POST**   |      传输实**体主体**      |      1.0、1.1      |
+|   **PUT**   |          传输文件          |      1.0、1.1      |
+|  **HEAD**   |      获得报文**首部**      |      1.0、1.1      |
+| **DELETE**  |          删除资源          |      1.0、1.1      |
+| **OPTIONS** |     **询问支持的方法**     |        1.1         |
+|  **TRACE**  |        **追踪路径**        |        1.1         |
+| **CONNECT** | 要求用**隧道协议连接代理** |        1.1         |
+
+LINK 和 UNLINK 已被 HTTP/1.1 **废弃**。
+
+> **HTTP状态码**
+
+服务器返回的 **响应报文** 中第一行为**状态行**，包含了状态码以及原因短语，用来告知客户端请求的结果。
+
+| 状态码  |                 类别                 |            含义            |
+| :-----: | :----------------------------------: | :------------------------: |
+| **1XX** |  Informational（**信息性**状态码）   |     接收的请求正在处理     |
+| **2XX** |      Success（**成功**状态码）       |      请求正常处理完毕      |
+| **3XX** |   Redirection（**重定向**状态码）    | 需要进行附加操作以完成请求 |
+| **4XX** | Client Error（**客户端错误**状态码） |     服务器无法处理请求     |
+| **5XX** | Server Error（**服务器错误**状态码） |     服务器处理请求出错     |
+
+- **100 Continue** ：表明到目前为止都很正常，客户端可以继续发送请求或者**忽略**这个响应。
+- **200 OK** ：成功。
+- **204 No Content** ：请求已经**成功处理**，但是返回的响应报文**不包含实体的主体**部分。一般在只需要从客户端往服务器发送信息，而不需要返回数据时使用。
+- **206 Partial Content** ：表示客户端进行了**范围请求**，响应报文包含由 Content-Range 指定范围的实体内容。
+- **301 Moved Permanently** ：**永久性**重定向。
+- **302 Found** ：**临时性**重定向。
+- ==**304 Not Modified** ：**协商缓存**==。当第一次请求网页时，会把各种资源（如图片等）从服务器拉取下来，浏览器一般会进行资源缓存，第二次如果刷新请求，如果资源的 **Etag** 值会被放到 **If-None-Match** 请求头里被发送给服务器，如果资源没有变化，那么服务器会返回 304，浏览器可以继续用这些资源。
+- **307 Temporary Redirect** ：临时重定向，与 302 的含义类似，但是 307 要求浏览器**不会**把重定向请求的 POST 方法改成 GET 方法。
+- **400 Bad Request** ：请求报文中存在**语法错误**。
+- **401 Unauthorized** ：**未认证**。该状态码表示发送的请求需要有**认证信息**（BASIC 认证、DIGEST 认证）。如果之前已进行过一次请求，则表示用户认证失败。
+- **403 Forbidden** ：请求被服务器**拒绝**。
+- **404 Not Found** ：资源未找到。
+- **405**：服务器**不支持当前的 HTTP 请求方法**。
+- **500 Internal Server Error** ：服务器正在**执行请求时**发生错误。
+- **502 Bad Gateway**：**网关错误**。
+- **503 Service Unavailable** ：服务器暂时处于**超负载**或正在进行**停机维护**，现在无法处理请求。
+- **504 Gateway timeout**：代表**网关超时**，是指服务器作为网关或代理，但是没有及时从上游服务器收到请求。
+
+> **HTTP首部字段**
+
+有 4 种类型的首部字段：**通用首部字段、请求首部字段、响应首部字段和实体首部字段**。
+
+**(1) 通用首部字段**：通用首部字段是请求与响应**都可以**使用的字段。
+
+- **Cache-Control**：从字面意思上很容易把 **no-cache** **误解**成为不缓存，但事实上 **no-cache 代表不缓存过期的资源**，缓存会向源服务器进行有效期确认后处理资源，也许称为 do-notserve-from-cache-without-revalidation 更合适。**no-store 才是真正地不进行缓存**，注意区别理解。参数如下：
+
+|        指令         | 参数 |                    说明                    |
+| :-----------------: | :--: | :----------------------------------------: |
+|  ==**no-cache**==   |  无  | **强制**向源服务器**再次验证**（协商缓存） |
+|  ==**no-store**==   |  无  |       **不缓存**请求或响应的任何内容       |
+| **max-age = [ 秒]** | 必需 |              响应的最大Age值               |
+
+- **Connection**：(1) 控制**不再转发给代理**的首部字段；(2) 管理**持久**连接。如果要持久连接需要设置为 **Keep-Alive**。
+- **Upgrade**：用于检测 HTTP 协议及**其他协议**是否可使用**更高的版本**进行通信，其参数值可以用来指定一个完全不同的通信协议（仅限与客户端和临接服务器之间，因此使用首部字段 Upgrade 时还需要额外指定 connection：Upgrade ），使用 **WebSocket** 需要**切换协议**使用这个。
+- **Via**：为了**追踪客户端和服务器之间的请求和响应报文的传输路径**。当报文经过**代理或网关**时，会先在**首部字段 Via 中附加**该服务器的信息，然后在进行转发。多与 TRACE 方法一起使用。
+
+**(2) 请求首部字段**：从客户端往服务器端发送**请求报文**中所使用的字段。
+
+- **Accept**：通知服务器客户端能够处理的**媒体类型**及媒体类型的相对优先级。
+- **Accept-Encoding**：首部字段可用来通知服务器用户代理支持的内容编码及编码的优先级。
+- **Authorization**：用来告知服务器用户代理的**认证信息**， 用于验证用户身份的凭证。使用 **Token 认证**时，将 Token 放在这个首部字段下。
+- **Host**：**唯一一个==必须被包含==在请求内的首部字段**。指明请求服务器的**域名**，及服务器所**监听的 TCP 端口号**。
+- **条件请求字段**：if-Match、if-Range、if-None-Match（与 304 响应码配合）等。
+- **Range**：用于只需获取部分资源的**范围请求**，字段值表明服务器资源的指定范围。
+- **User-Agent**：将创建请求的浏览器和用户代理信息等名称传达给服务器，**爬虫**必备。
+
+**(3) 响应首部字段**：由服务器端向客户端返回**响应报文**中所使用的字段。
+
+- **Location**：指定需要将页面**重新定向**至的地址。
+- **Age**：能告知客户端，源服务器在**多久前**创建了响应，字段值的单位为秒。
+- **ETag**：它是一种将**资源**以字符串的形式做唯一标识性的方式，服务器会为**每份资源分配对应的 ETag 值**，当资源更新时，ETag值也会更新。
+
+**(4) 实体首部字段**：包含在请求报文和响应报文中的**实体部分所使用的首部**。
+
+- **Allow**：列出资源所支持的 HTTP 方法的**集合**。
+- **Expires**：会将**资源失效的日期**告知客户端。
+- **Content-type**：说明了实体主体部分的**媒体类型**。
+
+> **代理**
+
+**代理服务器**的基本行为就是接收客户端发送的请求后**转发**给其他服务器。代理**不改变**请求 URI，会直接发送给前方持有资源的目标服务器。每次经过代理服务器转发请求或响应时，会**追加写入 Via 首部**信息。代理一般按两种基准分类：一是是否**使用缓存**，二是是否会**修改报文**。
+
+**代理服务器**作用：缓存、负载均衡、网络访问控制、访问日志记录。
+
+代理服务器分为**正向代理和反向代理**两种：
+
+- **正向代理**：用户察觉得到正向代理的**存在**。
+- **反向代理**：一般位于**内部网络**中，用户察觉**不到**。
+
+> **网关**
+
+可以将**其他协议的通信通过网关转换为 HTTP 协议**的请求。
+
+> **隧道**
+
+**隧道**可按要求建立起一条与其他服务器的通信线路，届时使用 **SSL** 等加密手段进行通信。隧道的目的是确保客户端能与服务器进行安全通信。
+
+
+
+##### 7. 网络面试题
 
 ###### TCP/UDP
 
-> UDP TCP 的区别？
+> **UDP TCP 的区别？**
 
 **TCP、UDP的区别**：（1）连接：UDP 无连接、TCP 有连接。（2）报文交付：UDP 尽最大努力交付，不保证可靠交付；（3）**拥塞控制**：UDP没有拥塞控制；（4）**通信方式**：UDP 支持一对一、一对多、多对多等，TCP 仅一对一；（5）**首部开销**：UDP 首部 8 字节，TCP 首部 20 字节。
 
 **UDP 首部**：共 8 字节。
 
-> 三次握手、四次挥手各个状态名称
+> **三次握手、四次挥手各个状态名称**
 
 <img src="assets/1574741905218.png" alt="1574741905218" style="zoom:60%;" />
 
-> TIME_WAIT 为什么等待 2MSL?
+> **TIME_WAIT 为什么等待 2MSL?**
 
 **MSL** 中文可以译为“**==报文最大生存时间==**”。等待 2MSL 时间主要**目的**是**怕最后一个 ACK** 包对方**没收到**，那么对方在**超时后将重发第三次握手的 FIN 包**，主动关闭端接到**重发的 FIN 包后可以再发一个 ACK 应答包**，从而确保四次挥手完成。
 
-> 为什么是 2MSL？
+> **为什么是 2MSL？**
 
 这个应该是确保客户端发出的最后一次 ack 包可以到达客户端， 如果等待 2msl 没有收到服务端重发请求，就可以完全断开连接了。如果收到服务端的超时重发请求，断开方就再次发送 ack 包，msl 是报文最长存活时间，客户端发给服务端的
 报文，最长会经过 msl 个时间，如果超过这个时间，服务端没有收到，服务端就发报文要求客户端重传，这个报文最多 msl 个时间到达客户端，两个加起来就是 2msl。
 
-> 如何解决 TIME_WAIT 状态过多？
+> **如何解决 TIME_WAIT 状态过多？**
 
 根据 TCP 协议，主动发起关闭的一方，会进入 TIME_WAIT 状态，持续 2*MSL(Max Segment Lifetime)，缺省为 4 分钟。可以设置变短一些。
 
-> SYN Flood是什么？有什么解决办法？
+> **SYN Flood是什么？有什么解决办法？**
 
 SYN Flood 是一种 Dos 攻击方式。SYN Flood 攻击利用的是 TCP 协议的三次握手(Three-Way Handshake)过程进行的攻击。TCP 服务器收到 TCP SYN request 包时，在发送 TCP SYN + ACK 包回客户机前，TCP 服务器要**先分配好一个数据区专门**服务于这个即将形成的 TCP 连接，这个时候的连接状态称为**半打开连接**(Half-open Connection)。
 
@@ -1342,7 +2664,7 @@ SYN Flood 是一种 Dos 攻击方式。SYN Flood 攻击利用的是 TCP 协议�
 
 **(3) 使用SYN Proxy防火墙**。
 
-> TCP 的长连接与短连接
+> **TCP的长连接与短连接**
 
 所谓长连接，指在一个 TCP 连接上可以连续发送多个数据包，在 TCP **连接保持期间**，如果没有数据包发送，需要双方发**检测包**以维持此连接，一般需要自己做在线维持（不发生RST包和四次挥手）。 
 
@@ -1354,7 +2676,7 @@ SYN Flood 是一种 Dos 攻击方式。SYN Flood 攻击利用的是 TCP 协议�
 
 **对比**：长连接多用于操作频繁（读写），点对点的通讯，而且连接数不能太多情况。
 
-> 如何使用 UDP 实现可靠传输
+> **如何使用 UDP 实现可靠传输**
 
 传输层无法保证数据的可靠传输，只能**通过应用层**来实现了。实现的方式可以参照 TCP 可靠性传输的方式，只是实现不在传输层，实现转移到了应用层。主要方式：
 
@@ -1367,21 +2689,21 @@ SYN Flood 是一种 Dos 攻击方式。SYN Flood 攻击利用的是 TCP 协议�
 - **RTP**：为数据提供了具有实时特征的端对端传送服务，如在组播或单播网络服务下的交互式视频音频或模拟数据。
 - **UDT**：UDT 建于 UDP之上，并引入新的拥塞控制和数据可靠性控制机制。UDT 是**面向连接的双向的应用层协议**。它同时支持可靠的数据流传输和部分可靠的数据报传输。由于 UDT 完全在 UDP 上实现，它也可以应用在除了高速数据传输之外的其它应用领域，例如点到点技术（P2P），防火墙穿透，多媒体数据传输等等。
 
-> TCP 连接底层用了哪些系统调用？
+> **TCP 连接底层用了哪些系统调用？**
 
 这些系统调用包括 **socket**()、**bind**()、**listen**()、**accept**()、**connect**()、**send**()、receieve()、**close**()、shutdown()。
 
-> 如果服务端与客户端同时调用 close() 会发生什么？
+> **如果服务端与客户端同时调用 close() 会发生什么？**
 
 双端同时 fin_wait_1，同时 time_wait。
 
-> 断开网线？
+> **断开网线？**
 
 如果网线断开的时间短暂，在SO_KEEPALIVE设定的探测时间间隔内，并且两端在此期间没有任何针对此长连接的网络操作。当连上网线后此TCP连接可以自动恢复，继续进行正常的网络操作。
 
 如果网线断开的时间很长，超出了SO_KEEPALIVE设定的探测时间间隔，或者两端期间在此有了任何针对此长连接的网络操作。当连上网线时就会出现ETIMEDOUT或者ECONNRESET的错误。你必须重新建立一个新的长连接进行网络操作。
 
-> TCP粘包？为什么会发生TCP粘包?
+> **TCP粘包？为什么会发生TCP粘包?**
 
 因此 TCP 的 socket 编程，收发两端（客户端和服务器端）都要有成对的 socket，因此发送端为了**将多个包更有效的发到对方**，使用了优化方法（Nagle算法），将**多次间隔较小、数据量小的数据，合并成一个大的数据块**，然后进行封包。这样接收端就难于分辨出来了，必须提供科学的拆包机制。
 
@@ -1395,7 +2717,7 @@ SYN Flood 是一种 Dos 攻击方式。SYN Flood 攻击利用的是 TCP 协议�
 
 **(3)使用特殊标记来区分消息间隔**。
 
-> TCP 的 keep alive 字段与 HTTP的 keep alive 字段
+> **TCP 的 keep alive 字段与 HTTP的 keep alive 字段**
 
 TCP 属于传输层，所谓 TCP 的keep-alive的说法其实并不科学，TCP 传输层通过三次握手连接后，会**自动发心跳包检测连接还存在**（所谓 keep-alive），如果心跳异常，会发起 FIN 断开连接。
 
@@ -1405,7 +2727,7 @@ HTTP 属于应用层，而且 HTTP 本质上是短连接，但为了节省创建
 
 ###### DNS
 
-> DNS 用的传输层协议
+> **DNS 用的传输层协议**
 
 DNS 可以使用 **UDP 或者 TCP** 进行传输，使用的端口号都为 **53**。**大多数情况下 DNS 使用 ==UDP== 进行传输**。那 TCP 是可靠的，UDP 不可靠。DNS 应该是**可靠**的，但它使用 UDP，**为什么？**
 
@@ -1418,11 +2740,11 @@ DNS 可以使用 **UDP 或者 TCP** 进行传输，使用的端口号都为 **53
 - 如果返回的响应超过的 **512 字节**（UDP 最大只支持 512 字节的数据）。
 - 区域传送（区域传送是主域名服务器向辅助域名服务器传送变化的那部分数据）。
 
-> DNS 解析过程（访问流程）
+> **DNS 解析过程（访问流程）**
 
 **主机向==本地域名服务器==的查询一般都是采用==递归查询==**。如果主机所询问的**本地域名服务器不知道**被查询域名的 IP 地址，那么本地域名服务器就以 **DNS 客户的身份**，向其他**根域名服务器**继续发出查询请求报文。每个域名服务器都维护一个**高速缓存**，存放最近用过的名字以及从何处获得**名字映射信息**的记录。
 
-> DNS 劫持？
+> **DNS 劫持？**
 
 DNS 劫持现象：输入的网址是[http://www.google.com](https://link.zhihu.com/?target=http%3A//www.google.com)，出来的是百度的页面。
 
@@ -1430,11 +2752,9 @@ HTTP 劫持现象：打开的是知乎的页面，右下角弹出偶系渣渣辉
 
 ###### ARP
 
-> ARP 欺骗是什么？如何避免？
+> **ARP 欺骗是什么？如何避免？**
 
 ARP欺骗就是通过伪造IP地址和MAC地址对实现ARP欺骗的，它能够在网络中产生大量的ARP包，来让网络堵塞。攻击主机只要持续的发送假的ARP包，让网络中的主机缓存错误的IP-MAC对应信心，造成网络中断或中间人攻击。ARP攻击主要是在局域网中的，因为ARP包是不会垮网络传播的。所以划分VLAN能够减少当受到ARP攻击后，网络受影响的范围。
-
-
 
 - ARP详细说说
 - ARP，如果要查找的MAC地址不在同一个网段怎么办
@@ -1476,6 +2796,7 @@ ARP欺骗就是通过伪造IP地址和MAC地址对实现ARP欺骗的，它能够
 - http2.0和http1.0区别，http2.0可以**推送弹幕消息**吗
 - HTTP是怎么找到TCP的
 - 服务器如何处理**大文件**传输
+- 项目中有没有用 HTTPS？
 
 
 
@@ -1483,13 +2804,13 @@ ARP欺骗就是通过伪造IP地址和MAC地址对实现ARP欺骗的，它能够
 
 ##### 1. 基础
 
-> 孤儿进程与僵尸进程
+> **孤儿进程与僵尸进程**
 
 一个**父进程**退出，而它的一个或多个子进程还在运行，那么这些**子进程将成为孤儿进程**。孤儿进程将被 **init 进程**（进程号为 1）所**收养**，并由 **init 进程对它们完成状态收集工作**。由于**孤儿进程会被 init 进程收养**，所以孤儿进程不会对系统造成危害。
 
 一个**子进程**的进程描述符在**子进程退出时不会释放**，只有当**父进程通过 wait() 或 waitpid() 获取了子进程信息后才会释放**。如果子进程**退出**，而父进程并**没有调用 wait() 或 waitpid()**，那么子进程的**进程描述符**仍然保存在系统中，这种进程称之为**僵尸进程**。
 
-> epoll 水平触发与边沿触发？
+> **epoll 水平触发与边沿触发**？
 
 **epoll** 的描述符事件有**两种触发模式**：**LT**（level trigger）和 **ET**（edge trigger）。
 
@@ -1498,6 +2819,8 @@ ARP欺骗就是通过伪造IP地址和MAC地址对实现ARP欺骗的，它能够
 **边沿触发模式**：和水平模式不同的是，通知之后进程**必须立即处理事件**，下次再调用 epoll_wait() 时不会再得到事件到达的通知。这种模式很大程度上减少了 epoll 事件被重复触发的次数，因此效率要比 LT 模式高。只支持 No-Blocking，以避免由于一个文件句柄的阻塞读/阻塞写操作把处理多个文件描述符的任务饿死。
 
 
+
+##### 面试题
 
 - 单个进程分配最大内存多少 (2) 32位的计算机为 4G？
 - IO 多路复用，讲下select、poll、epoll，边沿触发，水平触发。
@@ -1528,13 +2851,52 @@ ARP欺骗就是通过伪造IP地址和MAC地址对实现ARP欺骗的，它能够
 
 ##### 2. Linux
 
-> 软连接（符号链接）与硬连接（实体连接）
+> **软连接（符号链接）与硬连接（实体连接）**
 
 **硬链接的文件拥有相同的 inode**，因为操作系统是**靠 inode 来区分文件**的，2 个 inode 相同的文件，就代表它们**是一个文件**。删除一个文件并不会对其他拥有相同 inode 的文件产生影响，只有当 inode 相同的**所有文件被删除**了，也就是把硬链接和源文件都删除，这个文件才会被删除。
 
 **软链接**文件保存着**源文件所在的绝对路径**，在读取时会定位到**源文件**上，可以理解为 **Windows 的快捷方式。**当符号链接被删除时，并不会影响源文件。当**源文件**被删除了，链接文件就**打不开**了。因为记录的是**路径**，所以可以为**==目录==建立链接**。
 
+> **说说常用命令？**
 
+**service**：service 命令用于运行 System V init 脚本，这些脚本一般位于 `/etc/init.d` 文件下，这个命令可以直接运行这个文件夹里面的脚本，而不用加上路径。
+
+- 查看服务状态：`service ssh status` 。
+- 查看所有服务状态：`service --status-all` 。
+- 重启服务：`service ssh restart` 。
+
+**kill**：先用 **ps -ef** 查找某个进程得到它的**进程号**，然后再使用 **kill -9** 进程号**终止该进程**。
+
+**chmod**：chmod 用于改变文件和目录的权限。
+
+**ifconfig**：ifconfig 用于查看和配置系统的网络接口。
+
+**ps**：ps 命令用于显示**正在运行中的进程**的信息。查看 Java 进程的命令：
+
+- 方式一：`ps -ef |grep java`。
+- 方式二：`jps -m`。
+
+**vmstat**：每行会输出一些**系统核心指标**，通过这些指标可以了解系统状态。后面跟的参数 1 ，表示每秒输出一次统计信息，表头提示了每一列的含义。
+
+**mpstat**：该命令可以显示**每个 CPU 的占用情况**，如果有一个 CPU 占用率特别高，那么有可能是一个单线程应用程序引起的。
+
+**pidstat**：输出**进程的 CPU 占用率**，该命令会持续输出，并且不会覆盖之前的数据，可以方便观察系统动态。
+
+**iostat**：输出一些与 IO 状态相关的参数。
+
+**free**：free 命令可以查看**系统内存**的使用情况，`-m` 参数表示按照兆字节展示。
+
+**sar**：可以查看**网络设备的吞吐率**。可用于查看 **TCP 连接状态**。
+
+**top**：top 命令包含了前面好几个命令的检查的内容。比如**系统负载情况**（uptime）、系统**内存使用情况**（free）、系统 CPU 使用情况（vmstat）等。因此通过这个命令可以相对全面的查看系统负载的来源。同时 top 命令支持排序，可以按照不同的列排序，方便查找出诸如内存占用最多的进程、CPU占用率最高的进程等。
+
+**netstat**：可以查看端口、查看网络连接状况、当前进程连接数等等。
+
+**iptables**：是一个配置 Linux 内核**防火墙**的命令行工具。
+
+
+
+###### 面试题
 
 - linux进程怎么实现类似一个进程底下多线程的资源共享
 - Linux中的流控工具 Traffic Control 的原理
@@ -1550,7 +2912,6 @@ ARP欺骗就是通过伪造IP地址和MAC地址对实现ARP欺骗的，它能够
 - 提供一个日志文件，里面是用户的访问记录，用shell命令做一些统计工作
 - 如何查看服务器负载？
 - 如何查看端口占用情况？
-- 
 
 
 
@@ -1678,6 +3039,43 @@ limit 10;
 
 #### Redis
 
+> **项目中的缓存**？
+
+(1) 缓存仪器的实时数据。
+
+(2) 缓存综合信息管理平台主页上的业务数据，比如历史场次信息、采集数量统计信息等。
+
+> **项目的缓存穿透**
+
+**缓存穿透**：指的是对某个**缓存中一定不存在**的数据进行请求，该请求将会**穿透缓存到达数据库**。举个例子：某个黑客故意制造缓存中**不存在的 key** 发起**大量请求**，导致大量请求落到数据库。
+
+**使用布隆过滤器**：这种方法适用于数据**命中率不高、数据相对固定**、实时性低（通常是**数据集较大**）的场景（比如手术信息数据，更新的时间其实比较长）。使用 BloomFilter 布隆过滤器的话，需要**提前将已存在的 KEY** ，**初始化存储**到 BloomFilter 缓存中。
+
+根据 KEY 查询 BloomFilter 缓存。如果**不存在对应的值，直接返回**；如果存在就说明是大概率是系统预先存入的键，这时候就可以去 Redis 中查询是否存在缓存。如果存在缓存值，直接返回；如果不存在则继续到数据库去查数据。找到的数据可以再次存储到 Redis 中，并且可以**更新 BloomFilter** 缓存记录。
+
+如何实现布隆过滤器？(1) **Redisson BloomFilter**：Java Redis 库，实现 BloomFilter 的功能。(2) 基于 Guava 实现。(3) 基于 Redis 自带的 Bitmaps 结构。
+
+本项目使用的是 Guava 的布隆过滤器，设置的参数是期望插入的元素总个数 1000，误差率是 0.01。
+
+还可以缓存无效值，但是设置过期时间较短。
+
+> **项目的缓存一致性**
+
+**缓存一致性**：**缓存层和存储层**的数据存在着一定时间窗口的**不一致性**。缓存一致性要求数据**更新的同时缓存数据也能够实时更新**。更新 DB 和操作缓存两个动作之间，明显**缺乏原子性**，有可能更新 DB 完成，但是操作（淘汰或者更新）缓存失败
+
+缓存一致性的解决方案：
+
+**对于一般的业务数据**：
+
+* **读的时候，先读缓存，缓存没有的话，就读数据库，然后取出数据后放入缓存，同时返回响应**。
+* **更新的时候，先更新数据库，然后再==删除缓存==**。删除之后，下一次请求来的时候，由于是合格的键，因此能够通过布隆过滤器，然后再去查缓存，发现这时候是没有的，然后再去数据库查数据，然后将结果放入缓存中。
+
+**对于仪器的实时监测数据**：先存入数据库或者发送到消息队列，然后马上**更新缓存**。因为实时数据场景下缓存查询较多，直接更新就行了。
+
+
+
+##### 面试题
+
 - 跳表。介绍一下、画一下基本结构，搜索插入数据过程，**时间复杂度**。问到为什么用跳表而不是红黑树？跳表怎么实现代码描述？查询和插入复杂度
 - Redis还有什么高级数据结构？
 - Redis了解哪些（我把底层的SDS，渐进式hash，压缩表，raft算法，gossip协议疯狂输出）
@@ -1708,6 +3106,56 @@ limit 10;
 
 #### Spring
 
+##### 1. J2EE
+
+**JSP**：JSP 是一种 Servlet，但是与 HttpServlet 的工作方式**不太一样**。HttpServlet 是先由**源代码编译**为 **class 文件**后部署到服务器下，为**先编译后部署**。而 JSP 则是**先部署后编译**。JSP 会在客户端第一次请求 JSP 文件时被编译为 HttpJspPage 类（Servlet 接口的一个子类）。该类会被服务器临时存放在服务器工作目录里面。 
+
+JSP 中的四种作用域包括 page、request、session 和 application。
+
+**Servlet**：Servlet 是在**服务器**上运行的小程序。Servlet 主要负责**接收用户请求 HttpServletRequest**，在 **doGet()，doPost()** 中做相应的处理，并将回应 **HttpServletResponse** 反馈给用户。Servlet 可以设置初始化参数，供 Servlet 内部使用。一个 Servlet 类只会有**一个实例**，在它初始化时调用 **init**() 方法，销毁时调用 **destroy**() 方法。Servlet 需要在 **web.xml** 中配置，一个 Servlet 可以设置多个 URL 访问。**Servlet 不是线程安全的，多线程并发的读写会导致数据不同步的问题**。
+
+Servlet 接口定义了 **5 个方法**，其中**前三个方法与 Servlet 生命周期相关**：
+
+```java
+void init(ServletConfig config) throws ServletException;
+void service(ServletRequest req, ServletResponse resp) throws ServletException, java.io.IOException;
+void destroy();
+java.lang.String getServletInfo();
+ServletConfig getServletConfig();
+```
+
+Servlet 生命周期如下：
+
+- Web 容器加载 Servlet 并将其**实例化**后，Servlet 生命周期开始，容器运行其 **init() 方法**进行 Servlet 的**初始化**。
+- **请求到达**时调用 Servlet 的 **service**() 方法，service() 方法会根据需要调用与请求对应的 **doGet 或 doPost** 等方法。
+- 当服务器**关闭**或项目被卸载时服务器会将 Servlet **实例销毁**，此时会调用 Servlet 的 **destroy**() 方法。
+
+init 方法和 destroy 方法**只会执行一次**，service 方法客户端每次请求 Servlet 都会执行。Servlet 中有时会用到一些需要初始化与销毁的资源，因此可以把初始化资源的代码放入 init 方法中，销毁资源的代码放入 destroy 方法中，这样就不需要每次处理客户端的请求都要初始化与销毁资源。
+
+Tomcat 是 Web 应用服务器，是一个 Servlet **容器**，负责处理客户请求，把请求传送给 Servlet，并将 Servlet 的**响应传送回给客户**。
+
+##### 2. IOC
+
+
+
+##### 3. AOP
+
+
+
+##### 4. 事务
+
+
+
+##### 5. MVC
+
+
+
+##### 6. Spring Boot
+
+
+
+##### 7. 面试题
+
 - Spring MVC工作流程
 - 常用注解说一下
 - Spring里面的设计模式
@@ -1734,11 +3182,133 @@ limit 10;
 
 
 
+#### MyBatis
+
+> **JDBC执行步骤**
+
+JDBC 查询数据库数据，一般需要以下**几个步骤**：
+
+（1） 加载 JDBC **驱动**。
+
+（2） 提供 JDBC 连接的 URL 并获取数据库连接。
+
+（3） 创建 **JDBC Statement**。静态 SQL 对应 Statement，动态 SQL 对应 PreparedStatement。
+
+（4） **执行** SQL 语句。**Statement** 接口提供了三种执行 SQL 语句的方法：**executeQuery 、executeUpdate 和 execute**。
+
+（6） 对查询结果进行**转换处理**并将处理结果返回。执行**更新**返回的是本次操作**影响到的记录数**。执行**查询**返回的结果是一个 **ResultSet 对象**。
+
+（7） 关闭连接，释放相关资源。
+
+JDBC 用起来是**比较繁杂的，很多步骤都是重复**的，而且存在一些问题，所以才有了 MyBatis 这样的框架。
+
+> **MyBatis对JDBC的优化**
+
+(1) 第一步优化：**连接获取和释放**。使用了数据库连接池。
+
+(2) 第二步优化：**SQL统一存取**：将 SQL 语句**统一集中放到配置文件或者数据库**里面。
+
+(3) 第三步优化：**传入参数映射和动态SQL**：使用 **#变量名#** 表示**占位符变量**，使用 **\$变量名$** 表示**非占位符变量**。
+
+(4) 第四步优化：**结果映射和结果缓存**：对 SQL 执行结果的**缓存**来提升性能。
+
+(5) 第五步优化：**解决重复SQL语句问题**：通过**将 SQL 片段模块化**，将重复的 SQL 片段独立成一个 SQL 块，然后在各个 SQL 语句**引用重复的 SQL 块**，这样需要修改时只需要修改一处即可。 
+
+> **MyBatis执行流程**
+
+**(1) 加载配置并初始化**：加载配置文件（配置文件或者Java注解）。SQL信息加载成 **MappedStatement** 对象，存储在内存中。
+
+**(2) 接收调用请求**：接收执行请求，为 SQL 传入参数。
+
+**(3) 处理操作请求**：根据 SQL 的 **ID** 查找对应的 **MappedStatement** 对象；根据**传入参数对象解析 MappedStatement 对象**，得到最终要**执行的 SQL 和执行传入参数**；获取**数据库连接**，根据得到的最终 SQL 语句和执行传入参数到数据库执行，并得到执行结果；根据 **MappedStatement** 对象中的**结果映射配置对得到的执行结果进行转换处理**，并得到最终的处理结果；**释放**连接资源。
+
+> **框架架构**
+
+整体架构如下：
+
+<img src="assets/image-20200420123619702.png" alt="image-20200420123619702" style="zoom:80%;" />
+
+**(1) 加载配置**：配置来源于两个地方，一是**配置文件**，一是 Java 代码的**注解**，将 SQL 的配置信息加载成为不同的 **MappedStatement** 对象（包括了传入参数映射配置、执行的SQL语句、结果映射配置），存储在**内存**中。这里通过 SqlSessionFactoryBuilder 对配置文件进行加载解析，配置文件中的各个节点在被解析之后映射到**配置对象 Configuration 中**，其属性与配置文件中的熟悉一一对应。xml 中的**配置标签**有：**properties（属性），settings（设置），typeAliases（类型别名），typeHandlers（类型处理器），objectFactory（对象工厂），mappers（映射器）等**，Configuration 对象中也有这些属性。上述的 build() 方法就是传入 configuration 对象并生成 SqlSessionFactory 对象，默认使用的是 **DefaultSqlSessionFactory**。
+
+**(2) SQL解析**：当 API 接口层接收到**调用请求**时，会接收到传入 SQL 的 ID 和**传入对象**（可以是 Map、JavaBean 或者基本数据类型），Mybatis 会**根据 SQL 的 ID 找到对应的 MappedStatement**，然后根据传入**参数对象**对 **MappedStatement** 进行**解析**，解析后可以得到**最终要执行的 SQL 语句和参数**。
+
+**(3) SQL执行**：通过调用 DefaultSqlSessionFactory 的 **openSession** 方法返回一个 **SqlSession 实例**。根据 **Configuration** 对象的信息获取**数据库连接**，并设置**连接的事务隔离级别**等信息（通过传入**参数控制**），将经过**包装数据库连接对象** SqlSession 接口返回，DefaultSqlSession 是 SqlSession 的实现类，所以这里返回的是 **DefaultSqlSession**，SqlSession 接口里面就是对外提供的**各种数据库操作**。进行执行，得到操作数据库的结果。
+
+**(4) 结果映射**：将操作数据库的结果**按照映射的配置进行转换**，可以转换成 HashMap、JavaBean 或者基本数据类型，并将最终结果返回。
+
+> **Mapper文件**
+
+MyBatis 无需在 JAVA 代码中拼接 SQL，而是将其**移至 mapper 文件集中处理 SQL**节约了大量的开发时间。
+
+**Mapper中的元素**：
+
+- cache：对给定命名空间的缓存配置。
+- resultMap：结果集映射。
+- sql：可被其他语句引用的可重用语句块。
+- insert：插入语句。
+- update：更新语句。
+- delete：删除语句。
+- select：查询语句。
+
+> **MyBatis缓存**
+
+MyBatis 提供了一级缓存和二级缓存，用于减轻数据压力，提高数据库性能。
+
+**一级缓存**：也称为**本地缓存**，是 **SqlSession 级别**的缓存，用于保存用户在一次会话过程中查询的结果，用户**一次会话中只能使用一个** sqlSession，一级缓存是**自动开启**的，不允许关闭。**不同的 sqlSession 之间**的缓存数据区域（HashMap）是**互相不影响**的。在**同一次查询会话中如果出现相同的语句及参数**，就会从缓存中取出而不在走数据库查询。一级缓存**只能作用于查询会话**中，所以也叫做**会话缓存**。在应用运行过程中，**在一次数据库会话中，执行多次查询条件完全相同的 SQL，会优先命中一级缓存，避免直接对数据库中直接查询**。
+
+**一级缓存的条件**：必须是**相同的 SQL 和参数**；必须是**相同的会话 session**；必须是同一个 **mapper**；必须是**相同的 statement**；查询语句中间**没有执行 insert update delete 方法**，这些方法会导致一级缓存失效。
+
+**一级缓存解析**：每个 **SqlSession** 中都持有一个 **Excutor**，每个 Excutor 中有一个 **LocalCache**。当用户发起询问时，MyBatis 根据当前执行的语句生成 **MappedStatement**，在 LocalCache 进行查询，如果缓存**命中**的话，直接返回结果给用户，如果缓存没有命中的话，查询数据库，结果写入 LocalCache，最后返回结果给用户。**SqlSession** 在**提交**的时候会**清空本地缓存**，因为 commit 操作一般对应**插入、更新或者删除**操作，**清空缓存防止读取脏数据**。sqlSession 的 insert 方法和 delete 方法，都会统一调用 **update 的流程**。**update 方法**也是委托给了 **Executor 执行**。注意：**刷新缓存是清空这个 SqlSession 的所有缓存， 不单单是某个键**。MyBatis 和 **Spring 整合**后进行 mapper 代理开发，**不支持一级缓存**。
+
+**二级缓存**：也称为**全局缓存**，是 **mapper 级别**的缓存，是针对**一个表的查询结果**的存储，可以**共享给所有针对这张表的查询的用户**。也就是说对于 mapper 级别的缓存不同的 sqlsession 是可以**共享**的。**多个 SqlSession** 去操作同一个 **Mapper 的 SQL 语句**，多个 SqlSession 可以**共用二级缓存**，二级缓存是**跨 SqlSession** 的。
+
+**二级缓存原理**：开启**二级缓存**后，会使用 **CachingExecutor** 装饰 Executor，进入一级缓存的**查询流程前**，先在 CachingExecutor 进行**二级缓存的查询**，具体的工作流程如下所示。**先查全局的二级缓存，如果没有则查各个 session 自己的一级缓存，如果没有再查数据库**。在 **Mapper 上加上 @CacheNamespace** 注解。
+
+<img src="assets/image-20200518141857301.png" alt="image-20200518141857301" style="zoom:80%;" />
+
+**二级缓存**开启后，同一个 **namespace** 下的所有操作语句，都影响着**同一个 Cache**，即二级缓存被**多个 SqlSession 共享**，是一个**全局的变量**。当开启缓存后，数据的查询执行的流程就是 **二级缓存 -> 一级缓存 -> 数据库**。在二级缓存执行流程后就会进入一级缓存的执行流程。二级缓存底层使用了**装饰者模式**。
+
+**二级缓存使用条件**：当会话**提交或关闭**之后才会**填充二级缓存**，也就是必须调用 session.**close**() 方法后**缓存才放到缓存池**；必须是在**同一个命名空间**之下；必须是**相同的 SQL 语句和参数**。任何一种**增删改操作**都会清空整个 namespace 中的缓存。
+
+**二级缓存使用场景**：业务系统中存在很多的静态数据，这些数据的特性是**不会轻易修改但又是查询的热点数据**。
+
+**总结**：由于默认的 MyBatis 缓存实现都是**基于本地**的，**分布式环境下必然会出现读取到脏数据**，需要使用集中式缓存将 MyBatis 的 Cache 接口实现，有一定的开发成本，直接**使用 Redis、Memcached 等分布式缓存可能成本更低，安全性也更高**。
+
+> **一次SQL查询的流程分析**
+
+第一步：打开一个**会话**。
+
+```java
+SqlSession session = ssf.openSession();  
+```
+
+（1）获取前面加载配置文件的**环境信息**，并且获取环境信息中配置的**数据源**。
+
+（2）通过数据源获取一个**连接**，对**连接进行包装代理**（通过 JDK 的代理来实现**日志功能**）。
+
+（3）设置**连接的事务信息（是否自动提交、事务级别）**，从配置环境中获取事务工厂，事务工厂获取一个**新的事务**。
+
+（4）传入事务对象获取一个**新的执行器**，并传入**执行器、配置信息等获取一个执行会话对象**。
+
+从上面的代码可以得出，**一次配置加载只能有且对应一个数据源**。对于上述步骤不难理解，重点看看新建执行器和 **DefaultSqlSession**。
+
+> **mappedStatement**
+
+一个 select 标签会在初始化配置文件时被解析**封装成一个 MappedStatement 对象**，然后存储在 Configuration 对象的 **mappedStatements** 属性中，mappedStatements 是一个 **HashMap**，**存储时 key = 全限定类名 + 方法名，value = 对应的 MappedStatement 对象**。
+
+> **#{}和\${}的区别是什么？**
+
+**\${}** 是 Properties 文件中的**变量占位符**，它可以用于标签属性值和 SQL 内部，属于**静态文本替换**，比如 ${driver}会被静态替换为 com.mysql.jdbc.Driver。
+
+**#{}** 是 SQL 的**参数占位符**，Mybatis 会将 SQL 中的 **#{}** 替换为 **? 号**，在 SQL 执行前会使用 **PreparedStatement** 的参数设置方法，按序给 SQL 的 ? 号占位符设置参数值，这样可以**防止 SQL 注入攻击**。
+
+
+
 #### 消息队列
 
 ##### 1. 基础
 
-###### 消息模型
+> **消息模型**
 
 **点对点模型**：消息生产者向消息队列中发送了一个消息之后，只能**被一个消费者消费一次**。**不可重复消费**。
 
@@ -1746,7 +3316,7 @@ limit 10;
 
 **对比观察者模式与发布订阅模型**：观察者模式中，观察者和主题都知道对方的存在；而在发布与订阅模式中，生产者与消费者不知道对方的存在，它们之间通过频道进行通信。**观察者模式是同步的**，当事件触发时，主题会调用观察者的方法，然后等待方法返回；**而发布与订阅模式是异步的**，生产者向频道发送一个消息之后，就不需要关心消费者何时去订阅这个消息，可以立即返回。
 
-###### 使用场景
+> **使用场景**
 
 **解耦**：降低系统之间的耦合，减少开发维护难度。
 
@@ -1754,37 +3324,367 @@ limit 10;
 
 **削峰**：高峰期减轻数据库压力。
 
-###### 使用消息队列的问题
+> **使用消息队列的问题**
 
 **系统可用性降低**：系统可用性在某种程度上降低，因为需要考虑消息中间件的高可用问题。
 
 **系统复杂性提高**：加入MQ之后需要保证消息**没有被重复消费、处理消息丢失的情况、保证消息传递的顺序性、消息堆积**等等问题！
 
-**一致性问题**：消息队列可以实现异步来提高响应速度，但是如果后面其实没有消费就会导致一致性问题。
+**一致性问题**：消息队列可以实现异步来提高响应速度，但是如果后面其实**没有消费就会导致一致性问题**。
 
+> **如何保证消息可靠**？
 
+**发送可靠**：发送端完成操作后**一定能将消息成功发送到消息队列**中。实现方法：在**本地数据库建一张消息表**，将消息数据与业务数据保存在同一数据库实例里，这样就可以利用本地数据库的事务机制。**事务提交成功后，将消息表中的消息转移到消息队列中，若转移消息成功则删除消息表中的数据，否则继续重传**。
 
-##### 面试题
+**消费可靠**：接收端能够从消息队列**成功消费一次**消息。(1) 保证接收端处理消息的**业务逻辑**具有**幂等性**：只要具有幂等性，那么消费多少次消息，最后处理的结果都是一样的。(2) 保证**消息具有唯一编号**，并使用一张**日志表来记录已经消费的消息编号**。
 
-- mq消息可靠性 重复消费
-- mq怎么实现延迟队列
-- mq基本组件
-- Kafka发送消息的三种方式
-- 消息队列怎样解决消息的重复消费和漏消费
-- Kafka、RabbitMQ、RocketMQ的优缺点，怎么选择？
-- 项目 消息加入异步队列超时或者失败，你是怎么处理的。
-- 消息队列的使用场景
-- 消息的重发补偿解决思路
-- 消息的幂等性解决思路
-- 消息的堆积解决思路
-- 自己如何实现消息队列
-- 如何保证消息的有序性
-- 服务端消息堆积，如何解救？说了消息队列，分发处理，还有其他方法么？如果堆积了，可以将消息丢弃么？不会，说了看情况，如果不重要的，可以丢弃。
-- 问了一下kafka的一些机制。通过kafka消息队列异步落数据库时，如何保证数据可靠地落到数据库里。
-- 为什么kafka的一个partition里面的消息，一个consumer group里面只有一个消费者能消费，而不能两个消费者同时并行地消费。
-- 如果一个消费者拉走了一条消息，但是还没消费就挂了，kafka如何保证这条消息能够被消费而不导致消息丢失。
-- 消息队列如何保证不丢，你们是怎么做的
-- 多少个消费者？多少个partition？
+> **JMS与AMQP**
+
+JMS 是 Java 的消息服务，是一个消息服务的标准或者说是规范。ActiveMQ 就是基于 JMS 规范实现的。支持点对点与发布订阅两种消息模型。只是 Java API。
+
+AMQP 是一个提供统一消息服务的应用层标准高级消息队列**协议**（二进制应用层协议），是应用层协议的一个开放标准，为面向消息的中间件设计，**兼容 JMS**。基于此协议的客户端与消息中间件可传递消息，并不受客户端/中间件同产品，不同的开发语言等条件的限制。**RabbitMQ 就是基于 AMQP 协议实现的**。AMQP 有五种消息模型。
+
+|     对比     |                     JMS                     |          AMQP          |
+| :----------: | :-----------------------------------------: | :--------------------: |
+|     定义     |                  Java API                   |        **协议**        |
+|    跨语言    |                     否                      |         **是**         |
+|    跨平台    |                     否                      |         **是**         |
+| 支持消息类型 | 提供**两种消息模型**：① 点对点; ② 发布/订阅 | **提供了五种消息模型** |
+| 支持消息类型 |              支持多种消息类型               |  **byte**[]（二进制）  |
+
+> **消息队列产品对比**
+
+|           特性           |               ActiveMQ                |                        RabbitMQ                        |                           RocketMQ                           |                            Kafka                             |
+| :----------------------: | :-----------------------------------: | :----------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|      **单机吞吐量**      | 万级，比 RocketMQ、Kafka 低一个数量级 |                      同 ActiveMQ                       |                   **10 万级**，支撑高吞吐                    | **10 万级**高吞吐，一般配合大数据类的系统来进行**实时数据计算、日志采集**等场景 |
+| topic 数量对吞吐量的影响 |                                       |                                                        | topic 可以达到几百/几千的级别，吞吐量会有较小幅度的下降，这是 RocketMQ 的一大优势，在同等机器下，可以支撑大量的 topic | topic 从几十到几百个时候，吞吐量会大幅度下降，在同等机器下，Kafka 尽量**保证 topic 数量不要过多**，如果要支撑大规模的 topic，需要增加更多的机器资源 |
+|        **时效性**        |               **ms 级**               |     **微秒级，这是 RabbitMQ 的一大特点，延迟最低**     |                            ms 级                             |                     **延迟在 ms 级以内**                     |
+|        **可用性**        |      高，基于主从架构实现高可用       |                      同 ActiveMQ                       |                    **非常高，分布式架构**                    | **非常高，分布式**，一个数据多个副本，少数机器宕机，不会丢失数据，不会导致不可用 |
+|      **消息可靠性**      |         有较低的概率丢失数据          |                        基本不丢                        |              经过参数优化配置，可以做到 0 丢失               |            经过参数优化配置，可以**做到 0 丢失**             |
+|       **功能支持**       |         MQ 领域的功能极其完备         | 基于 erlang 开发，并发能力很强，**性能极好，延时很低** |           MQ 功能较为完善，还是分布式的，扩展性好            | 功能较为简单，主要支持简单的 MQ 功能，在大数据领域的实时计算以及日志采集被大规模使用 |
+
+##### 2. RabbitMQ
+
+整体模型架构如下所示。
+
+![image-20200728153059822](assets/image-20200728153059822.png)
+
+消息一般由 2 部分组成：**消息头**（或者说是标签 Label）和 **消息体**。消息体也可以称为 **payLoad**，消息体是不透明的，而消息头则由一系列的**可选属性组成**，这些属性包括 **routing-key**（路由键）、**priority**（相对于其他消息的优先权）、**delivery-mode**（指出该消息可能需要持久性存储）等。生产者把消息交由 RabbitMQ 后，RabbitMQ 会根据消息头把消息发送给感兴趣的 Consumer(消费者)。
+
+> **Exchange**
+
+即交换器，在 RabbitMQ 中，消息并不是直接被投递到 **Queue(消息队列)** 中的，中间还必须经过 **Exchange(交换器)** 这一层，**Exchange(交换器)** 会把的消息分配到对应的 **Queue(消息队列)** 中。**Exchange(交换器)** 用来接收生产者发送的消息并将这些消息路由给服务器中的队列中，如果路由不到，或许会返回给 **Producer(生产者)** ，或许会被直接丢弃掉 。这里可以将 RabbitMQ 中的交换器看作一个简单的实体。
+
+<img src="assets/image-20200728153434183.png" alt="image-20200728153434183" style="zoom:50%;" />
+
+**Exchange有 4 种类型，不同的类型对应着不同的路由策略**：**direct(默认)**，**fanout**，**topic** 和 **headers**，不同类型的Exchange 转发消息的**策略**有所区别。
+
+**生产者**将消息发给**交换器**的时候，一般会指定一个 **RoutingKey(路由键)**，用来指定这个消息的路由规则，而这个 **RoutingKey 需要与交换器类型和绑定键(BindingKey)联合使用才能最终生效**。
+
+RabbitMQ 中通过 **Binding(绑定)** 将 **Exchange(交换器)** 与 **Queue(消息队列)** 关联起来，在绑定的时候一般会指定一个 **BindingKey(绑定建)**，这样 RabbitMQ 就知道如何正确将消息路由到队列了，如下图所示。一个绑定就是基于路由键将交换器和消息队列连接起来的路由规则，所以可以将**交换器理解成一个由绑定构成的路由表**。Exchange 和 Queue 的绑定可以是**多对多**的关系。Binding (绑定) 示意图：
+
+<img src="assets/image-20200728153615976.png" alt="image-20200728153615976" style="zoom:47%;" />
+
+生产者将消息发送给交换器时，需要一个**RoutingKey**，当 BindingKey 和 RoutingKey 相匹配时，消息会被路由到对应的队列中。在绑定多个队列到同一个交换器的时候，这些绑定允许使用相同的 BindingKey。
+
+**Exchange Types**：RabbitMQ 常用的 Exchange Type 有 **fanout**、**direct**、**topic**、**headers** 这四种。
+
+> **Queue**
+
+**Queue(消息队列)** 用来保存消息直到发送给消费者。它是消息的容器，也是消息的终点。一个消息可投入一个或多个队列。消息一直在队列里面，等待消费者连接到这个队列将其取走。
+
+**RabbitMQ** 中消息只能存储在 **队列** 中，这一点和 **Kafka** 这种消息中间件**相反**。Kafka 将消息存储在 **topic（主题）** 这个逻辑层面，而相对应的队列逻辑只是 topic 实际存储文件中的位移标识。 RabbitMQ 的生产者生产消息并最终投递到队列中，消费者可以从队列中获取消息并消费。
+
+##### 3. Kafka
+
+> **Kafka 的主要应用场景**
+
+- **消息队列** ：建立实时流数据管道，以可靠地在系统或应用程序之间获取数据。
+- **日志收集**：可以用 Kafka 收集各种服务的 **log**，通过 kafka 以**统一接口服务**的方式开放给各种 consumer，例如 hadoop、Hbase、Solr 等。
+
+> **主题与分区**
+
+Kafka 中，**消息**以**主题（Topic）**来分类，每一个**主题**都对应一个**「消息队列」**。通过**分区 Partition 的引入**来实现对主题的水平拓展。
+
+> **架构模型**
+
+<img src="assets/nAcIiT.png" alt="nAcIiT.png" style="zoom:50%;" />
+
+- **Producer(生产者)**：消息生产者。
+- **Consumer(消费者)**：消息消费者。
+- **Consumer Group(CG)**：**消费者组**，由**多个 consumer 组成**。消费者组内每个消费者负责消费**不同分区 Partition** 的数据，一个分区 Partition 只能**由一个消费者**消费；**消费者组之间互不影响**。所有的消费者都属于某个消费者组，即一个消费者组是**逻辑上的一个订阅者**。如果只有一个消费组，那么架构其实就是消息模型中的**点对点模型**，如果有多个消费组，那就对应了消息模型中的**发布订阅模型**。
+- **Broker**：可以看作是一个独立的 Kafka **服务器实例**。多个 Kafka Broker 组成一个 **Kafka Cluster。**
+
+- **Topic(主题)**：Producer 将消息发送到特定的**主题**，Consumer 通过**订阅**特定的 Topic(主题) 来消费消息。
+- **Partition(分区)**：**Partition** 属于 Topic 的一部分。一个 **Topic 可以有多个 Partition**，并且同一 Topic 下的 Partition 可以**分布在不同的 Broker 上**，这也就表明一个 Topic 可以横跨多个 Broker 。Kafka 中的 **Partition** 实际上可以对应成为**消息队列中的队列**。分区主要使用来实现**负载均衡**。
+- **Replica**：为保证集群中的**某个节点**发生故障时，该节点上的 **partition 数据不丢失**，且 kafka 仍然能够继续工作，kafka 提供了**副本机制**，**一个 topic 的每个分区都有若干个副本**，副本包含一个 **leader** 和若干个 **follower**。
+- **Leader**：每个分区**多个副本的“主”**，生产者发送数据的对象，以及消费者消费数据的对象都是 leader。
+
+- **Follower**：每个分区**多个副本中的“从**”，实时从 leader 中**同步**数据，保持和 leader **数据的同步**。leader 发生故障时，**选举**一个 follower 会成为新的 leader。
+
+服务端(brokers)和客户端(producer、consumer)之间通信通过 **TCP 协议**来完成。
+
+> **Kafka与存储实现**
+
+Kafka 的消息是**存在于文件系统**之上的。如果是**针对磁盘的顺序访问**，某些情况下它可能比随机的内存访问都要快，甚至可以和网络的速度相差无几。
+
+**Topic 其实是逻辑上的概念，面向消费者和生产者，物理上存储的其实是 Partition**，每一个 Partition 最终对应一个**目录，里面存储所有的消息和索引文件**。默认情况下，每一个 Topic 在创建时如果不指定 Partition 数量时只会创建 1 个 Partition。比如创建一个 Topic 名字为 test ，没有指定 Partition 的数量，那么会默认创建一个 **test-0 的文件夹**，这里的命名规则是：**<topic_name>-<partition_id>**。
+
+<img src="assets/kafka存在文件系统上.png" alt="主题（Topic）与分区（Partition）" style="zoom:47%;" />
+
+任何发布到 Partition 的消息都会被**追加到 Partition 数据文件的尾部**，这样的**顺序写磁盘操作让 Kafka 的效率非常高**，**==顺序写磁盘==**效率比随机写内存还要高，这是 Kafka **高吞吐率**的一个重要原因。
+
+每一条消息被发送到 Broker 中，会**根据 Partition 规则**选择被存储到哪一个 Partition。如果 Partition 规则设置的合理，所有消息可以**均匀分布**到不同的 Partition中。
+
+每个 Partition 都为一个**目录**，而每一个目录又被平均分配成多个大小相等的 **Segment File** 中，Segment File 又由 **index file 和 data file 组成**，他们总是**成对出现**，后缀 “.index” 和 “.log” 分表表示 Segment **索引文件和数据文件**。**索引文件中的元数据指向对应数据文件中** message 的物理偏移地址。
+
+<img src="assets/image-20200728174836476.png" alt="image-20200728174836476" style="zoom:50%;" />
+
+**Segment 是 Kafka 文件存储的最小单位。**Segment 文件命名规则：Partition 全局的第一个 Segment **从 0** 开始，后续每个 Segment 文件名为上一个 Segment 文件**最后一条消息的 offset 值**。因为文件名为上一个 Segment 最后一条消息的 **offset** ，所以当需要查找一个**指定 offset 的 message 时**，通过在所有 segment 的文件名中进行**二分查找**就能找到它归属的 segment ，再在其 index 文件中找到其对应到文件上的**物理位置**，就能拿出该 message。
+
+在 Partition 的 Segment 数据文件中是**顺序读写**的，且消息消费后不会删除（删除策略是针对过期的 Segment 文件）。
+
+> **消费者与消费者组**
+
+Kafka 消费者是**消费组**的一部分，当**多个消费者形成一个消费组**来消费主题时，**每个消费者**会收到**不同分区**的消息。**Kafka 一个重要特性就是只需写入一次消息，可以支持任意多的应用读取这个消息**，也就是**每个应用都可以读到全量的消息**。为了使得每个应用都能读到全量消息，应用需要有**不同的消费组**。
+
+假如新增了一个新的消费组 G2，而这个消费组有**两个消费者**，那么会是这样的：
+
+<img src="assets/image-20200728163529141.png" alt="image-20200728163529141" style="zoom:50%;" />
+
+在这个场景中，**消费组 G1 和消费组 G2** 都能收到 T1 主题的**全量消息**，在逻辑意义上来说它们**属于不同的应用**。
+
+> **分区重平衡**
+
+当**新的消费者**加入**消费组**，它会消费一个或多个分区，而这些分区之前是由其他消费者负责的；另外当消费者离开消费组（比如重启、宕机等）时，它所消费的分区会**分配给其他分区**。这种现象称为**重平衡（rebalance）**。重平衡是 Kafka 一个很重要的性质，这个性质保证了高可用和水平扩展。**不过也需要注意到，在重平衡期间，所有消费者都不能消费消息，因此会造成整个消费组短暂的不可用**。
+
+消费者通过**定期发送心跳消息**到一个作为组协调者（group coordinator）的 broker 来保持在消费组内存活。这个 broker 不是固定的，每个消费组都可能不同。当消费者拉取消息或者提交时，便会发送心跳。如果消费者超过一定时间没有发送心跳，那么它的**会话（session）就会过期**，组协调者会认为该消费者已经宕机，然后触发重平衡。
+
+如果消费者超过一定时间没有发送心跳，那么它的**会话（session）就会过期**，组协调者会认为该消费者已经宕机，然后触发重平衡。可以看到，从消费者宕机到会话过期是有一定时间的，这段时间内该消费者的分区都不能进行消息消费；通常情况下，可以进行**优雅关闭**，这样消费者会发送离开的消息到组协调者，这样组协调者可以**立即进行重平衡**而不需要等待会话过期。
+
+> **Partition与消费模型**
+
+Kafka 中一个 topic 中的消息是**被打散分配在多个 Partition(分区) 中存储的**， Consumer Group 在消费时需要从不同的 Partition 获取消息，那最终如何重建出 Topic 中消息的**顺序**？
+
+答案是：**没有办法**。**Kafka 只会保证在 Partition 内消息是有序的，而不管全局的情况**。
+
+下一个问题是：Partition 中的**消息可以被（不同的 Consumer Group）多次消费**，那 Partition中被消费的消息是何时删除的？ Partition 又是如何知道一个 Consumer Group 当前消费的位置呢？
+
+无论消息是否被消费，**除非消息到期，否则 Partition 从不删除消息**。例如设置保留时间为 2 天，则消息发布 2 天内任何 Group 都可以消费，2 天后消息自动被删除。
+Partition 会为**每个 Consumer Group 保存一个偏移量**，记录 **Group 消费到的位置**。 如下图：
+
+<img src="assets/image-20200728164036156.png" alt="image-20200728164036156" style="zoom:50%;" />
+
+> **Kafka与Pull模型**
+
+获取消息可以有 push 与 pull 两种方式。**Kafka 消费者采用 pull（拉）模式从 broker 中读取数据**。
+
+**push 模式很难适应消费速率不同的消费者，因为消息发送速率是由 broker 决定的**。**而 pull 模式则可以根据 Consumer 的消费能力以适当的速率消费消息**。
+
+> **Kafka如何保证消息消费顺序**
+
+Kafka 中 **Partition(分区)是真正保存消息的地方**，发送的消息都被放在了这里。而的 Partition(分区) 又存在于 Topic(主题) 这个概念中，并且可以给 Topic 指定**多个 Partition**。每次添加消息到 Partition(分区) 的时候都会采用**尾加法**。Kafka 只能保证**一个 Partition(分区) 中的消息有序**，而**不能保证 Topic(主题) 中所有 Partition(分区) 的全局有序性**。
+
+消息在被追加到 **Partition**(分区) 的时候都会**分配一个特定的偏移量**（offset）。Kafka **通过偏移量（offset）来保证消息在分区内的顺序性**。所以就有一种很简单的保证消息消费顺序的方法：**1 个 Topic 只对应一个 Partition**。
+
+另一种方法：Kafka 中发送一条消息的时候，可以指定 **topic，partition，key，data**（数据） 4 个参数。如果发送消息的时候指定了 Partition 的话，所有消息都**会被发送到指定的 Partition**。并且同一个 key 的消息可以**保证只发送到同一个 partition**，这个可以采用表/对象的 id 来作为 key。
+
+**项目**：根据手术场次号取模将不同的手术数据发到**同一个 partition 中**。
+
+> **如何保证消息不丢失/可靠性**
+
+消息丢失分几种情况：
+
+**(1) 生产者丢失消息**：生产者(Producer) 调用 send 方法发送消息之后，**消息可能因为网络问题**并没有发送过去。客户端为了确定消息是发送成功，**需要判断消息发送的结果**。比如使用**回调方法**来监听是否成功，回调方法里面还可以设置一个重试次数。**项目**：在**本地维护一个数据库表**，数据先放到本地数据库，然后发送到消息队列且保证成功之后再删除这个数据。
+
+**(2) 消费者丢失消息**：消息在被追加到 Partition (分区)的时候都会**分配一个特定的偏移量**（offset）。偏移量（offset) 表示 Consumer 当前消费到的 Partition(分区) 的所在的位置。Kafka 通过**偏移量（offset）可以保证消息在分区内的顺序性**。
+
+<img src="assets/image-20200728164036156-1598761886693.png" alt="image-20200728164036156" style="zoom:50%;" />
+
+当消费者**拉取**到了分区的某个消息之后，**消费者会自动提交 offset**。自动提交的话会有一个问题，如果当消费者刚拿到这个消息准备进行真正消费的时候，突然挂掉了，**消息实际上并没有被消费，但是 offset 却被自动提交了**。
+
+**解决办法也比较粗暴，关闭自动提交 offset，每次在真正消费完消息之后再自己手动提交 offset 。** 但是这样会带来消息被**重新消费**的问题。比如刚刚消费完消息之后，**还没提交 offset**，结果自己挂掉了，那么这个消息理论上就会被**消费两次**。这时候需要保证消费逻辑的**幂等性**。
+
+**(3) Kafka弄丢消息**：Kafka 为分区（Partition）引入了多副本（Replica）机制。设置几个参数进行配置：
+
+- **设置 acks = all**：当配置 **acks = all** 代表则**所有副本都要接收到该消息**之后该消息才算真正成功被发送。
+- **设置 replication.factor >= 3**：这样就可以**保证每个分区(partition) 至少有 3 个副本**。
+
+> **如何保证消息不被重复消费**
+
+如何保证消息**不被重复消费**？换句话说就是如何保证消息消费的**幂等性**？Kafka 消费者消费消息之前默认会自动提交 offset，如果关闭自动提交，消费完成之后再手动提交 offset 的话，如果消息已经消费完成但是没来得及提交 offset 就挂了，这样重启之后就会造成消息的重复消费。
+
+解决重复消费问题需要考虑**幂等性**。举个例子，当消费一条消息时就往数据库插入一条数据。如何**保证重复消费**也插入一条数据呢？那就需要从**幂等性**角度考虑了。
+
+**怎么保证消息队列消费的幂等性？**需要结合具体业务来思考：
+
+- 比如某个数据要**写数据库**，先根据**主键查一下**，如果数据已经存在就别插入而是 **update** 一下。
+- 如果是**写 Redis**，那没问题，因为每次都是 set，**天然幂等性**。
+- 对于消息可以**建个表**（**专门存储消息消费记录**）。生产者发送消息前**判断库中是否有记录**（有记录说明已发送），没有记录就先入库，状态为**待消费**，然后发送消息并把主键 id 带上。消费者接收消息时通过主键 ID 查询记录表，判断消息状态是否已消费。若没消费过则处理消息，处理完后更新消息记录的状态为已消费。
+
+> **Offset的维护**
+
+由于 consumer 在消费过程中可能会出现断电宕机等故障，consumer 恢复后，需要从故障前的位置的继续消费，所以 consumer 需要实时记录自己消费到了哪个 **offset**，以便故障恢复后继续消费。
+
+**group + topic + partition（GTP） 才能确定一个 offset**！
+
+Kafka 0.9 版本之前，consumer 默认**将 offset 保存在 Zookeeper 中**，从 0.9 版本开始，consumer 默认**将 offset 保存在 Kafka 本地一个内置的 topic 中**，该 topic 为 **__consumer_offsets**（此时消费者对于 offset 相当于生产者）。
+
+也可以自定义存储 offset，需要借助 **ConsumerRebalanceListener** 实现。
+
+> **多副本机制**
+
+**Kafka** 为分区（Partition）引入了**多副本（Replica）机制**。分区（Partition）中的多个副本之间会有一个 leader ，其他副本称为 **follower**。发送的消息会**被发送到 leader 副本**，然后 follower 副本才能从 leader 副本中**拉取消息进行同步**。
+
+生产者和消费者**只与 leader 副本交互**。其他副本只是 leader 副本的**拷贝**，它们的存在只是为了**保证消息存储的安全性**。当 leader 副本发生故障时会从 follower 中**选举出一个 leader**，但是 follower 中如果有和 leader 同步程度达不到要求的参加不了 leader 的竞选。
+
+**副本数据同步策略**：
+
+|             **方案**             |                           **优点**                           |                         **缺点**                          |
+| :------------------------------: | :----------------------------------------------------------: | :-------------------------------------------------------: |
+| **半数以上完成同步，就发送 ack** |                            延迟低                            | 选举新的 leader 时，容忍 n 台节点的故障，需要 2n+1 个副本 |
+|   **全部完成同步，才发送 ack**   | 选举新的 leader 时，容忍 **n 台节点**的故障，需要 n+1 个副本 |                          延迟高                           |
+
+Kafka 选择了**第二种方案**，原因如下：(1) 同样为了容忍 n 台节点的故障，第一种方案需要 2n+1 个副本，而第二种方案只需要 n+1 个副本，而 Kafka 的每个分区都有大量的数据，第一种方案会造成大量数据的冗余。(2) 虽然第二种方案的网络延迟会比较高，但网络延迟对 Kafka 的影响较小（同一网络环境下的传输）。
+
+> **Kafka与Zookeeper**
+
+ZooKeeper 主要为 Kafka 提供**元数据的管理**的功能。
+
+1. **Broker 注册**：Zookeeper 上有一个专门**用来进行 Broker 服务器列表记录**的节点。每个 Broker 在启动时都会到 Zookeeper 上进行**注册**，即到 **/brokers/ids** 下创建**属于自己的节点**。每个 Broker 就会将自己的 IP 地址和端口等信息记录到该节点中去。
+2. **Topic 注册**：同一个Topic 的消息会被**分成多个分区并将其分布在多个 Broker 上**，这些分区信息及与 Broker 的**对应关系也都是由 Zookeeper 在维护**。比如创建了一个名字为 **my-topic** 的主题并且它有两个分区，对应到 zookeeper 中会创建这些文件夹：**/brokers/topics/my-topic/Partitions/0、/brokers/topics/my-topic/Partitions/1**。
+3. **负载均衡**：Kafka 通过给特定 Topic 指定**多个 Partition**，而各个 Partition 可以分布在不同的 Broker 上，这样便能提供比较好的**并发能力**。 对于同一个 Topic 的不同 Partition，Kafka 会**尽力将这些 Partition 分布到不同的 Broker 服务器上**。当生产者产生消息后也会尽量投递到不同 Broker 的 Partition 里面。消费消息的时候，Zookeeper 可以根据当前的 Partition 数量以及消费者数量来实现**动态负载均衡**。
+4. **Leader选举**：当有个 broker 挂了之后，Zookeeper 组织进行 Leader 选举。
+
+> **Kafka高效读写数据**
+
+**(1) 顺序写磁盘**：生产者的数据要**写入到 log 文件**中，写的过程是一直**追加到文件末端，为顺序写磁盘**，速度极快，甚至快于随机读内存。顺序写之所以快，是因为其省去了大量**磁头寻址**的时间。
+
+**(2) 零拷贝技术**："零拷贝技术" 只用将**磁盘文件的数据复制到内核的缓存区中一次**，然后将数据**从页面缓存直接发送到网络中**（发送给不同的订阅者时，都可以使用同一个页面缓存），**避免了重复复制**操作。
+
+<img src="assets/1567513386020.png" alt="1567513386020" style="zoom:60%;" />
+
+<img src="assets/1567513364566.png" alt="1567513364566" style="zoom:60%;" />
+
+如果有 10 个消费者，传统方式下，数据复制次数为 4 * 10 = 40 次，而使用“零拷贝技术”只需要 1+10=11 次，一次为从磁盘复制到页面缓存，10 次表示 10 个消费者各自读取一次页面缓存。
+
+> **Kafka事务**
+
+事务可以保证 Kafka 在 **Exactly Once 语义**的基础上，生产和消费可以**跨分区和会话，要么全部成功，要么全部失败**。**注意**：这里的事务主要谈的是**生产者**的事务。
+
+**Producer 事务**：为了实现跨分区跨会话的事务，需要引入一个**全局唯一的 Transaction ID**（**一定是客户端给的**），并将 Producer 获得的 PID 和 Transaction ID 绑定。这样当 Producer 重启后就可以通过正在进行的 Transaction ID 获得原来的 PID。 为了管理 Transaction，Kafka 引入新的组件 **Transaction Coordinator**。Producer 就是通过和 Transaction Coordinator 交互获得 Transaction ID 对应的任务状态。Transaction Coordinator 还负责将事务所有写入 Kafka 的一个内部 Topic，这样即使整个服务重启，由于事务状态得到保存，进行中的事务状态可以得到恢复，从而继续进行。
+
+> **Producer API**
+
+Producer 发送消息采用的是**异步发送**的方式。消息发送的过程涉及两个线程：**main 线程和 Sender 线程**，以及一个线程共享变量：**RecordAccumulator**（接收器）。
+
+**main 线程将消息发送给 RecordAccumulator，Sender 线程不断从 RecordAccumulator 中拉取消息发送到 Kafka broker。**
+
+<img src="assets/kafka-produce.png" style="zoom:60%;" />
+
+**可以有同步发送与异步发送，异步发送就是使用回调的方式实现**。
+
+**Kafka 发送消息的三种方式**：异步发送（不带回调函数、带回调函数）、同步发送。
+
+> **Consumer API**
+
+由于在消费过程中可能会出现断电宕机等故障，消费者恢复后需要从**故障前的位置的继续消费**，所以 consumer 需要**实时记录自己消费到了哪个 offset**，以便故障恢复后继续消费。所以 offset 的维护是 Consumer 消费数据是必须考虑的问题。**先提交 offset 后消费，有可能造成数据的漏消费；而先消费后提交 offset，有可能会造成数据的重复消费**。
+
+**(1) 自动提交**：可以自动提交 offset 的相关参数如 enable.auto.commit。但是自动提交可能引起**消息消费失败**的问题。比如说自动提交之后宕机了，这部分消息就丢失了。
+
+**(2) 手动提交**：手动提交 offset 的方法有两种，分别是 **commitSync**（**同步提交**）和 **commitAsync**（**异步提交**）。两者的相同点是，都会将**本次 poll 的一批数据最高的偏移量提交**；不同点是，commitSync **阻塞当前线程**，一直到提交成功，并且会自动失败充实（由不可控因素导致，也会出现提交失败）；而 commitAsync 则**没有失败重试机制**，故有可能提交失败。手动提交可能造成**重复消费**的问题。
+
+##### 4. 面试题
+
+> **如何保证消息的有序性？如何让消息发送到指定的 Partition？**
+
+Kafka 在所有的 Partition 里面是不保证有序性的，但是单个 Partition是保证有序性的，因此直接发送消息的时候通过参数配置往指定的 Partition 发送即可。
+
+每一条消息被发送到 broker 时，会根据 paritition 规则选择被存储到哪一个partition。如果 partition 规则设置的合理，所有消息可以均匀分布到不同的 partition 里，这样就实现了水平扩展。
+
+在发送一条消息时，可以指定这条消息的 key，producer 根据这个 key 和 partition 机制来判断将这条消息发送到哪个 parition。paritition 机制可以通过指定 producer 的 **paritition. class 这一参数**来指定，该 class 必须实现**kafka.producer.Partitioner 接口**。如果 ke y可以被解析为整数则将对应的整数与 partition 总数取余，该消息会被发送到该数对应的 partition。（每个 parition 都会有个序号）。
+
+项目就是实现了一个 Partitioner 接口，然后在里面根据手术场次号对 Broker 总数取模，这样定位到不同的 Partition 里面。
+
+> **Kafka发送消息的三种方式？**
+
+**Kafka 发送消息的三种方式**：异步发送（不带回调函数、带回调函数）、同步发送。
+
+> **Kafka死信队列**
+
+> **消息队列如何保证不丢，你们是怎么做的?**
+
+消息丢失有三种：**客户端丢失、Kafka丢失、消费者丢失**。客户端丢失：通过回调方法来判断消息是否成功发送到消息队列，如果没有就进行重发，同时客户端维护一个消息发送的数据库表，成功则把数据库里面的记录删除。Kafka丢失：采用多节点部署方式，每个 topic 设置三个 Partition，也就是有两个副本。消费者丢失：先消费消息再更新 Offset，但是这样可能因为消费者宕机造成重复消费的问题，所以消费逻辑需要保证**幂等性**。比如插入数据之前先根据主键看看有没有这个数据，有的话就只是更新一下。
+
+> **消息队列的使用场景**
+
+共有三个场景，解耦、异步、削峰。项目中用到两个，**异步场景**：仪器数据上传到服务器之后先放到消息队列中进行异步处理，这样可以提高 QPS。**削峰场景**：传感器结点每天个整点会发送一次状态数据，这样的话可能同时上传的数据量很大，使用消息队列削峰。
+
+> **如果一个消费者拉走了一条消息，但是还没消费就挂了，kafka如何保证这条消息能够被消费而不导致消息丢失**
+
+这种情况不要使用默认的自动提交 Offset，而是关闭自动提交 Offset，改用消息消费完成之后手动提交 Offset，这样就不会消息丢失。
+
+> **为什么kafka的一个partition里面的消息，一个consumer group里面只有一个消费者能消费，而不能两个消费者同时并行地消费**
+
+Kafka 通过消费者组机制同时实现了发布/订阅模型和点对点模型。多个组的消费者消费同一个分区属于多订阅者的模式，这没有什么问题；而在单个组内某分区只交由一个消费者处理的做法则属于点对点模式。其实这就是设计上的一种取舍，如果Kafka 真的允许组内多个消费者消费同一个分区，也不是什么灾难性的事情，只是没什么意义而且还会**重复消费消息**。
+
+> **消息的幂等性解决思路**
+
+为了保证消息必达，MQ 使用了消息超时、重传、确认机制。使得消息可能被重复发送。
+
+**MQ 内部的幂等性**：对于每条消息，MQ 内部生成一个全局唯一、与业务无关的消息 ID：inner-msg-id。当 MQ-server 接收到消息时，需要根据 inner-msg-id 判断消息是否重复发送。
+
+**消费者幂等**：(1) 插入数据的时候先根据主键查询一下数据是否存在，如果存在就仅仅 update 一下就行。(2) 可以让**生产者**发送每条数据的时候，里面加一个**全局唯一的 id**，类似订单 id 之类的东西，然后消费到了之后，先根据**这个 id 去比如 Redis** 里查一下，之前消费过吗？如果没有消费过就进行消费，然后这个 id 写 Redis。当然本地也可以维护一个缓存记录当前消费过的最近的 100 条消息 ID。
+
+> **消息队列怎样解决消息的重复消费和漏消费**
+
+**漏消费**：消费配置了自动提交 Offset，然后拉取到消息之后还没消费就宕机了。这种情况下可以配置成不自动提交 Offset。
+
+**重复消费的原因**：(1) 生产者可能因为一些情况重复发送消息，消费者就会收到重复的消息；(2) 消费者配置了不自动提交 Offset 而是手动提交，当消息消费完成但是还没提交时宕机，重启之后就会重复消费。
+
+**重复消费解决**：生产者发送消息时给每个消息维护一个**全局 ID**，这样可以解决重复发送的问题。消费者消费时依然采用手动提交 Offset，消费逻辑这边只需要保证幂等性即可，具体两种做法参考上一个问题。
+
+> **消息的重发补偿解决思路**
+
+- 可靠消息服务定时查询状态为已发送并超时的消息
+- 可靠消息将消息重新投递到 MQ 组件中
+- 下游应用监听消息，在满足幂等性的条件下，重新执行业务。
+- 下游应用通知可靠消息服务该消息已经成功消费。
+- 通过消息状态确认和消息重发两个功能，可以确保上游应用、可靠消息服务和下游应用数据的最终一致性。
+
+> **如果让你写一个消息队列，该如何进行架构设计？说一下你的思路。**
+
+参考 Kafka 的实现即可。从以下**几个角度**来考虑一下：
+
+* 首先 mq 得支持**可伸缩性**，就是需要的时候快速扩容，就可以增加吞吐量和容量，所以设计个**分布式的系统**，参照一下 kafka 的设计理念，broker -> topic -> partition，每个 partition 放一个机器，就存一部分数据。如果现在资源不够了，简单啊，给 topic 增加 partition，然后做数据迁移，增加机器，就可以存放更多数据，提供更高的吞吐量。
+
+* 其次得考虑一下这个 mq 的**数据要不要落地磁盘**吧？那肯定要了，落磁盘才能保证别进程挂了数据就丢了。那落磁盘的时候怎么落啊？顺序写，这样就没有磁盘随机读写的寻址开销，磁盘顺序读写的性能是很高的，这就是 kafka 的思路。
+
+* 其次考虑 **mq 的可用性**。参考 kafka 的高可用保障机制。**多副本** -> leader & follower -> broker 挂了重新选举 leader 即可对外服务。
+
+* **数据如何不丢失**。可以参考 kafka 数据**零丢失方案**。
+
+> **Kafka、RabbitMQ、RocketMQ的优缺点，怎么选择？**
+
+参考前面的对比图。
+
+> **消息的堆积解决思路，物联网的消息堆积怎么办**
+
+**客户端**：客户端这边可以与服务器做一个通信，判断消息队列是否处于大量数据积压的状态，如果是那么先把收据存储到客户端后续慢慢发送到服务器再发送到消息队列（这个是针对物联网的应用场景）。
+
+**消费者**：核心思想是紧急临时扩容，更快的速度去消费数据。注意：这里需要**拓展 Partition 的数量同时增加消费者数量**，如果单单增加消费者的数量是不行的，因为这样多余的消费者是无用的。同时保证 Consumer 正常工作。
+
+堆积的消息可以将消息丢弃么？
+
+> **项目多少个消费者？多少个partition？**
+
+项目里面只有一个 Topic，一个 Topic 分成了三个 Partition。总共**三个消费者**。
+
+> **通过kafka消息队列异步落数据库时，如何保证数据可靠地落到数据库里**？
+
+这里可以关闭自动提交 Offset，而改为手动提交 Offset，只有等写库过程完全正常没有发生异常回滚的情况下才提交 Offset，这样就算没有写库成功，那么 Kafka 保存的 Offset 依然是消费过的那个版本。
+
+> **mq怎么实现延迟队列**
 
 
 
@@ -1796,16 +3696,332 @@ limit 10;
 
 #### Netty
 
-- 为什么选择 Netty
-- 说说业务中，Netty 的使用场景
-- 原生的 NIO 在 JDK 1.7 版本存在 epoll bug
-- 什么是TCP 粘包/拆包
-- TCP粘包/拆包的解决办法
-- Netty 线程模型
-- 说说 Netty 的零拷贝
-- Netty 内部执行流程
-- Netty 重连实现
-- **Netty内存共享**
+**IO 模型**就是说用什么样的**通道进行数据的发送和接收**，Java 共支持 3 种**网络编程 IO 模式：BIO，NIO，AIO**。它们是 Java 语言对**操作系统的各种 IO 模型的封装**。使用时用 API 就行了。
+
+##### 1. Java IO模型
+
+###### 概述
+
+> **同步与异步**
+
+**同步和异步**是针对应用程序和内核的交互而言的，同步和异步关注的是消息通信机制。关注两个任务之间是否有依赖。
+
+**同步** ：两个同步任务**相互依赖**，并且一个任务必须以**依赖于另一任务**的某种方式执行。
+
+**异步**： 两个异步的**任务完全独立**的，一方的执行**不需要等待**另外一方的执行。
+
+> **阻塞与非阻塞**
+
+**阻塞和非阻塞**是针对于**进程在访问数据**的时候，根据 IO 操作的**就绪状态**来采取的不同方式。
+
+**阻塞：** 阻塞就是发起一个请求，调用者一直等待请求结果返回，也就是当前线程会被挂起，无法从事其他任务，只有当条件就绪才能继续。
+
+**非阻塞：** 非阻塞就是发起一个请求，调用者不用一直等着结果返回，可以先去干其他事情，在不能立刻得到结果之前，该调用不会阻塞当前线程。
+
+**同步和异步是目的，阻塞和非阻塞是实现方式**。几种 IO 模型。
+
+- **同步阻塞 IO（BIO）**：用户进程发起一个 IO 操作以后，必须**等待 IO 操作**真正完成后才能继续运行。
+- **同步非阻塞 IO（NIO）**：用户进程发起一个 IO 操作以后**可做其它事情**，但用户进程需要**经常询问** IO 操作是否完成，这样造成不必要的 CPU 资源浪费。
+- **异步非阻塞 IO（AIO）**：用户进程发起一个 IO 操作然后**立即返回**，等 IO 操作真正的完成以后，应用程序会得到 IO 操作完成的通知。类比 Future 模式。
+
+> **BIO模型**
+
+BIO（Blocking IO） 是**面向流**的**同步阻塞 IO**，是一种**同步阻塞模型**。**服务端**通常由一个独立的 **Acceptor 线程**负责监听客户端的连接，它收到客户端连接请求后为**每个客户端创建一个新的线程**进行链路处理，处理完成后，通过输出流返回应答给客户端，**线程销毁**。典型的一请求一应答的模型。
+
+> **伪异步IO模型**
+
+改进 BIO 一连接一线程的模型，可以使用**线程池来**管理这些线程，实现 1 个或多个线程处理 N 个客户端的模型，但是底层还是使用的同步阻塞 I/O，通常被称为"**伪异步I/O模型**"。
+
+###### BIO
+
+> **NIO模型**
+
+使用场景：NIO 方式适用于**连接数目多且连接比较短**（轻操作） 的架构， 比如**聊天服务器， 弹幕系统， 服务器间通讯**，编程比较复杂， JDK1.4 开始支持。**但实际少用 NIO 写代码，比较复杂的。直接用 Netty 就行了，但是 NIO 的模型很重要**。
+
+> **流与块**
+
+BIO 与 NIO 最重要的区别是**数据打包和传输**的方式，==BIO 以**流**的方式处理数据，而 NIO 以**块**的方式处理数据==。
+
+**面向流**的 I/O 一次处理**一个字节数据**：一个输入流产生一个字节数据，一个输出流消费一个字节数据。为流式数据创建过滤器非常容易，链接几个过滤器，以便每个过滤器只负责复杂处理机制的一部分。不利的一面是，面向流的 I/O 通常相当慢。
+
+**面向块**的 I/O 一次处理**一个数据块**，按块处理数据比按流处理数据要**快得多**。但是面向块的 I/O 缺少一些面向流的 I/O 所具有的优雅性和简单性。
+
+> **NIO模型核心组件**
+
+NIO 有三大核心组件： **Channel(通道)， Buffer(缓冲区)，Selector(多路复用器器/选择器)**。
+
+客户端和服务器之间通过 **Channel 通信**。NIO 可以在 Channel 进行读写操作。这些 Channel 都会被注册在 Selector 多路复用器上。NIO 实现了 ==IO **多路复用**中的 **Reactor** 模型==，**一个线程** Thread 使用一个**选择器** Selector 通过**轮询**的方式去**监听多个通道**  Channel 上的事件，从而让一个线程就可以处理多个事件。
+
+![image-20200727173241246](assets/image-20200727173241246.png)
+
+> **通道Channel**
+
+通道 **Channel** 是对 BIO 中**流的模拟**，可以通过它**读取和写入**数据，通道是**双向**的。通道都实现了 **Channel 接口**，比如有 FileChannel、SocketChannel、ServerSocketChannel、DatagramChannel 等。
+
+> **缓冲区Buffer**
+
+**从通道读入与写出数据都必须先经过缓冲区，不会直接对通道进行读写数据**。其底层就是一个数组，缓冲区都继承于**抽象类 Buffer**，包括如下实现类：ByteBuffer、CharBuffer、ShortBuffer 等。
+
+缓冲区的几个重要状态量：
+
+- **capacity**：**最大容量**。
+- **position**：当前**已经读写**的字节数。
+- **limit**：**还可以读写**的字节数。
+
+Buffer 的**操作**一般遵循几个步骤，操作分为**读模式和写模式**：
+
+- 调用 **allocate**() 方法**分配缓冲区内存**。
+
+- 写入数据到 Buffer。
+- 调用 **flip**() 方法进行**模式切换**。可以将**写模式切换到读模式**。
+- 从 Buffer 中**读取**数据。
+- 调用 **clear**() 方法，清理 buffer。
+
+> **多路复用器Selector**
+
+Selector 通过**一个线程不停的轮询注册的 Channel**，找出已经准备就绪的通道执行 IO 操作。**Selector IO 多路复用**底层一般使用操作系统的（**select，poll，epoll**）来实现。
+
+多路复用器提供选择已经就绪的任务的能力，它会不断地**轮询注册在其上的通道**（Channel），如果某个通道处于就绪状态，会被 Selector 轮询出来，然后通过 **SelectionKey** 可以取得就绪的 **Channel 集合**，从而进行后续的 IO 操作。
+
+如果配置监听的**通道 Channel 为非阻塞**，那么当 Channel 上的 IO 事件还**未到达**时，就不会进入阻塞状态一直等待，而是**继续轮询**其它 Channel，找到 IO **事件已经到达**的 Channel 并处理事件。
+
+**一个 Selector** 可以**同时轮询多个** Channel，因为 JDK 使用了 **epoll**() 代替传统的 select() 实现，**没有**最大连接句柄的限制，所以只需要一个线程负责 Selector 轮询，就可以接入**成千上万**的客户端连接。
+
+如果有事件发生，在将**通道注册到选择器**上时，还需要指定要**注册的具体事件**，主要有以下几类：
+
+- SelectionKey.**OP_CONNECT**：连接就绪。
+- SelectionKey.**OP_ACCEPT**：接收就绪。
+- SelectionKey.**OP_READ**：读就绪。
+- SelectionKey.**OP_WRITE**：写就绪。
+
+Selector 在有通道**事件到达**的时候返回 **SelectionKey 的集合**，之后遍历这个集合并根据不同的事件类型进行处理。
+
+**NIO 服务端程序详细分析：**
+
+1、创建一个 ServerSocketChannel 和 Selector ，并将 **ServerSocketChannel 注册到 Selector** 上。
+
+2、 selector 通过 **select**() 方法监听 **channel 事件**，当客户端连接时，selector 监听到**连接事件**， 获取到 **ServerSocketChannel** 注册时绑定的 **selectionKey**。
+
+3、selectionKey 通过 **channel**() 方法可以获取**绑定的 ServerSocketChannel**。
+
+4、ServerSocketChannel 通过 **accept**() 方法得到 **SocketChannel**。
+
+5、将 **SocketChannel 注册到 Selector 上，关心 read 事件**。
+
+6、注册后返回一个 **SelectionKey**, 会和该 **SocketChannel 关联**。
+
+7、selector 继续通过 select() 方法**监听事件**，当客户端发送数据给服务端，selector 监听到 read 事件，获取到 SocketChannel  注册时绑定的 selectionKey。
+
+8、selectionKey 通过 channel() 方法可以获取绑定的 socketChannel。
+
+9、将 socketChannel 里的数据读取出来。
+
+10、用 socketChannel 将服务端数据写回客户端。
+
+![image-20200727192554528](assets/image-20200727192554528.png)
+
+这里：首先注册一个 **ServerSocketChannel 到 Selector** 上，这个 ServerSocketChannel 就可以理解成一个**服务器**，专注与处理**连接事件**，此时等待连接。这时候**客户端连接**进来，这时候通过 ServerSocketChannel 得到客户端与服务器之间的连接的普通的 **SocketChannel**，然后把这个 **SocketChannel 注册到 Selector** 上，此后如果客户端有读写事件就**从自己的 SocketChannel 进行**，也就是说上图中 Selector 其实注册了三个普通的 SocketChannel 和一个 ServerSocketChannel，但是这四个都是类似的，只是各自处理的**事件不同**。
+
+==**这里 Selector 既要处理连接事件，又要处理 IO 读写事件。**==所以这里弊端就出现了，因此采用 Netty。
+
+> **AIO模型**
+
+AIO 是**异步非阻塞的 IO 模型**。异步 IO 是基于**事件和回调机制**实现的，也就是应用操作之后会直接返回，不会堵塞在那里，当后台处理完成，操作系统会通知相应的线程进行后续的操作。AIO 并**没有采用 NIO 的多路复用器**，而是使用**异步通道**的概念。其 **read，write 方法**的返回类型都是 **Future 对象**。而 **Future 模型是异步**的，其核心思想是：去主函数等待时间。但是用的不多。
+
+> **各种IO使用场景**
+
+- **BIO** 模型适用于**连接数目比较小且固定**的架构，这种方式对服务器资源要求比较高，并发局限于应用中，JDK1.4 以前的唯一选择，但程序直观简单易理解。
+- **NIO** 模型适用于**连接数目多且连接比较短**（轻操作）的架构，比如聊天服务器，并发局限于应用中，编程比较复杂，JDK1.4 开始支持。
+- **AIO** 模型使用于**连接数目多且连接比较长**（重操作）的架构，比如相册服务器，充分调用 **OS 参与**并发操作，编程比较复杂，JDK7 开始支持。
+
+> **Reactor模式和Proactor模式**
+
+两种 **IO 多路复用**方案: **Reactor and Proactor。**Reactor 模式是基于**同步I/O**的，而 Proactor 模式是基于**异步 I/O**的。Reactor：能收了你跟俺说一声。Proactor：你给我收十个字节，收好了跟俺说一声。
+
+##### 2. Netty核心功能与线程模型
+
+Netty 是一个**异步的事件驱动**的**网络**应用**框架**。
+
+**Java NIO 的类库**和 API 繁杂，开发与维护都比较困难。**Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装**，并进行了一定的优化。
+
+ Netty 应用场景：Dubbo、RocketMQ、Hadoop、游戏服务器等。
+
+> **Netty线程模型**
+
+Netty 的**线程模型**如下图所示：
+
+![image-20200727213832939](assets/image-20200727213832939.png)
+
+对比 NIO 的线程模型，NIO 的模型其实就一个 **Selector 同时需要处理连接事件和读写事件**。如果读写事件太多造成积压，这就造成连接事件得不到及时处理。一种升级的模型其实可以理解成有**两个 Selector**，一个专门用于处理连接事件，一个专门用于处理读写事件。所以一个 Selector 连接建立后，获取**通道并注册到另一个 Selector 上**，专门用于读写事件，这样就舒服多了。这种就可以成为**一主一从**结构。
+
+通过**配置参数**，可以配置成**一主一从、一主多从、多主多从**的架构。
+
+Netty 抽象出**两组线程池** **BossGroup** 和 **WorkerGroup**，BossGroup 专门负责接收**客户端的连接**，WorkerGroup 专门**负责网络的读写**。
+
+BossGroup 和 WorkerGroup 类型都是 **NioEventLoopGroup**。NioEventLoopGroup 相当于一个**事件循环线程组**，这个组中含有多个事件循环线程， 每一个事件循环线程是 **NioEventLoop**。一个 **NioEventLoop 可以理解为一个线程**。每个 NioEventLoop **都有一个 selector**，相当于一个线程就有一个 Selector，用于监听注册在其上的 socketChannel 的网络通讯。
+
+每个 **Boss  NioEventLoop 线程**内部循环执行的步骤有 3 步：
+
+- 处理 **==accept 事件==** , 与 client 建立连接 , 生成 **NioSocketChannel 通道**。
+- 将 **NioSocketChannel** **注册到某个 Worker NioEventLoop 的 selector 之上**。
+- 处理**任务队列**的任务 ， 即 runAllTasks。
+
+每个 **Worker  NioEventLoop** 线程循环执行的步骤：
+
+- **轮询注册**到自己 **Selector** 上的所有 **NioSocketChannel** 的 **read, write** 事件（只处理读写事件）。
+- 处理 I/O 事件， 即 **read , write 事件**， 并在对应 **NioSocketChannel** 处理业务。
+- runAllTasks 处理**任务队列 TaskQueue 的任务** ，一些耗时的业务处理一般可以放入 **TaskQueue** 中慢慢处理，这样不影响数据在 **pipeline** 中的流动处理。
+
+每个 Worker NIOEventLoop 处理 **NioSocketChannel** 业务时，会使用 **pipeline** (管道)，管道中维护了很多 **handler** 处理器用来处理 channel 中的数据。
+
+> **Netty核心组件**
+
+**(1) Bootstrap、ServerBootstrap**：主要作用是**配置整个 Netty 程序并串联各个组件**。**Bootstrap** 类是**客户端启动引导类**，**ServerBootstrap** 是**服务端启动引导类**。
+
+**(2) Future、ChannelFuture**：通过 **Future 和 ChannelFutures** 注册一个监听，当**操作执行成功或失败时监听会自动触发注册的监听事件**，从而实现异步操作。
+
+**(3) Channel**：通道，不同协议、不同的阻塞类型的连接都有不同的 Channel 类型与之对应。
+
+**(4) Selector**：基于 **Selector 对象实现 IO 多路复用**，通过 **Selector 一个线程可以监听多个连接的 Channel 事件**。当向一个 **Selector 中注册 Channel 后**，Selector 就会**不断地查询(Select) 这些注册的 Channel** 是否有**已就绪的 I/O 事件**（例如可读，可写，网络连接完成等），这使得**一个线程**可以高效地管理多个 Channel 。
+
+**(5) NioEventLoop**：NioEventLoop 维护了**一个线程和任务队列**，支持**异步提交**执行任务，线程启动时会调用 NioEventLoop 的 **run 方法**，执行 I/O 任务和非 I/O 任务。**IO 任务**即 **selectionKey** 中就绪的事件，如 **accept、connect、read、write** 等，由 **processSelectedKeys** 方法触发。**非 IO 任务**即添加到 **taskQueue** 中的任务，如 **register0、bind0** 等任务，由 **runAllTasks 方法触发**。
+
+**(6) NioEventLoopGroup**：主要管理 **EventLoop 的生命周期**，可以理解为一个**线程池**，内部维护了**一组线程**。每个线程(NioEventLoop)负责处理**多个 Channel 上的事件**，而**一个 Channel 只对应于一个线程**。
+
+**(7) ChannelHandler**：是一个**接口**，**处理 I/O 事件或拦截 I/O 操作**，并将其**转发到其 ChannelPipeline**(业务处理链)中的下一个处理程序。根据事件的不同分为入站事件与出站事件。会各自调用各自的实现类。
+
+**(8) ChannelHandlerContext**：保存 **Channel 相关**的**所有上下文信息**，同时关联一个 **ChannelHandler 对象**。
+
+**(9) ChannelPipline**：ChannelPipeline 是 **ChannelHandler 链的容器**，用于**保存 ChannelHandler 实现类的 List**，用于**处理或拦截 Channel 的入站事件和出站操作**。**每个 Channel 都有且仅有一个 ChannelPipeline 与之对应**，它们的组成关系如下： 
+
+![image-20200727214255181](assets/image-20200727214255181.png)
+
+一个 Channel 包含了一个 **ChannelPipeline**，而 ChannelPipeline 中又维护了一个由 **ChannelHandlerContext** 组成的**双向链表**，并且每个 ChannelHandlerContext 中又**关联着一个 ChannelHandler**。
+
+**read** 事件(**入站**事件)和 **write** 事件(**出站**事件)在一个**双向链表**中，**入站**事件会从链表 **head 往后传递**到最后一个入站的 handler，**出站**事件会从链表 **tail 往前传递**到最前一个出站的 handler，**两种类型的 handler 互不干扰**。
+
+> **ByteBuf**
+
+ByteBuf 由一串**字节数组**构成，数组中每个**字节用来存放信息**。ByteBuf 提供了**两个索引**，一个用于**读取**数据，一个用于**写入**数据。
+
+当从 ByteBuf 读取时，它的 **readerIndex**（读索引）将会根据读取的字节数**递增**。当写 ByteBuf 时，它的 **writerIndex** 也会根据写入的字节数进行**递增**。
+
+> **Netty编解码**
+
+当通过 Netty 发送或者**接受一个消息**的时候，就将会发生一次**数据转换**，需要将数据转换为**二进制字节流**。**入站**收到二进制字节流消息会被**解码**：从**字节**转换为另一种格式（比如 Java 对象）；如果是**出站**消息，它会被**编码成字节**。
+
+如果直接发送字符串是**不行**的，发不出去，除非**注册一个编解码器**。
+
+Netty 提供了一些**编码解码器**，他们都实现了 **ChannelInboundHandler** 或者 **ChannelOutboundHandler** 接口。在这些类中，**channelRead** 方法已经被**覆写**了。比如**编解码字符串的 StringEncoder 和 StringDecoder**，编解码对象的 ObjectEncoder 和 ObjectDecoder 等。其实 **StringEncoder 其实也是一个 ChannelHandler**，所以 StringEncoder 也就是**被加入到处理事件的 ChannelHandler 链中**。StringDecoder 是一个 **ChannelInboundHandler**，而 StringEncoder 是一个 **ChannelOutboundHandler**，所以对于出站与入站只会调用其中的一个。ChannelOutboundHandler 和 ChannelInboundHandler 都是 ChannelHandler。
+
+**出站事件只关注 ChannelOutboundHandler 的一些列 Handler，而入站事件只关注 ChannelInboundHandler 的一些列的 Handler。**所以**出站只会执行 StringEncoder 进行编码**，而**入站只会执行 StringDecoder 进行解码**。
+
+这里不同的 ChannelHandler **加入处理链的顺序**是有讲究的，如果是同一类型的，比如都是 ChannelOutboundHandler  则会**有先后调用**的顺序。
+
+**自定义编码器**：也可以通过继承 **ByteToMessageDecoder 和 MessageToByteEncoder 自定义编解码器**。
+
+> **Netty粘包拆包**
+
+TCP 粘包拆包是指发送方发送的**若干数据包**到接收方接收时**粘成一包**或某个**数据包被拆开接收**。
+
+<img src="assets/image-20200727210845658.png" alt="image-20200727210845658" style="zoom:50%;" />
+
+**为什么出现粘包现象**：TCP 收发两端（客户端和服务器端） 有**成对的 socket**，发送端为了将**多个包**更有效的发给对方，使用了**优化方法（Nagle 算法）**，将**多次间隔较小且数据量小**的数据， **合并成一个大的数据块， 然后进行封包**。 这样做虽然提高了效率， 但是接收端就**难于分辨出完整的数据包**了， 因为面向流的通信是**无消息保护边界**的。
+
+**解决方法**：
+
+**(1) 报文固定长度**：客户端发送固定长度的包，不足长度的补齐即可。Netty 提供 FixedLengthFrameDecoder。
+
+**(2) 添加报文分隔符**：每条数据有**固定的格式**（开始符、结束符），选择开始符和结束符的时候一定要注意每条数据的**内部一定不能出现**开始符或结束符。Netty 提供 LineBasedFrameDecoder与DelimiterBasedFrameDecoder。
+
+**(3) 发送长度**：将**消息分为头部和消息体**，在**头部**中保存有当前**整个消息的长度**，只有在读取到足够长度的消息之后才算是读到了一个完整的消息。发送每条数据的时候，将数据的**长度一并发送**。比如可以封装一个自定义的消息体（包含长度与内容），然后自定义编解码器来解析数据包。Netty 提供了 LengthFieldBasedFrameDecoder与LengthFieldPrepender。
+
+上面 Netty 对每种方法都提供了现成的解码器，把这些 Decoder 注册到 **Pipeline** 里面使用就行了。
+
+> **Netty心跳检测机制**
+
+**心跳**即在 TCP **长连接**中，客户端和服务器之间**定期发送的一种特殊的数据包**，通知对方**自己还在线**，以确保 TCP 连接的有效性。这可以用于**检测连接断开**的情况，比如客户端**直接断电**，导致服务端并不知道已经断线的情况。
+
+实现心跳机制的关键是 **IdleStateHandler**。可以配置的主要参数有：**读超时、写超时、读写超时**。使用时只需要在 Pipeline 中注册 IdleStateHandler 即可，它也是一个 ChannelHandler。
+
+> **Netty断线重连**
+
+当用 Netty 实现一个 TCP client 时，当连接断掉的时候 Netty 应该能够**自动重连**。
+Netty Client有两种情况下需要重连：
+
+1. Netty Client **启动**的时候需要重连。
+2. 在程序运行中**连接断掉**需要重连。
+
+实现 **ChannelFutureListener** 用来启动时监测是否连接成功，不成功的话重试。这个类也是一个 ChannelHandler，注册到 Pipeline 中即可。
+
+> **Netty零拷贝**
+
+Netty 可以分配**直接内存**，这是属于**堆外内存**。**DirectByteBuffer 对象**是在**堆内**的，其**存放有堆外内存的地址值**，指向的**直接内存是在堆外**，其**数据**是存放在堆外的直接内存中的。
+
+<img src="assets/image-20200728000505451.png" alt="image-20200728000505451" style="zoom:60%;" />
+
+**==直接内存申请较慢，但访问效率高==**。
+
+**使用直接内存的优缺点：**
+
+**优点**：不占用堆内存空间，减少了 GC 发生。本地 IO 会直接操作直接内存（直接内存=>系统调用=>硬盘/网卡），而非直接内存则需要**二次拷贝**（堆内存=>直接内存=>系统调用=>硬盘/网卡）。
+
+**缺点**：直接内存的初始分配较慢；没有 JVM 直接帮助管理内存，容易发生内存溢出。因此建议通过参数指定**直接内存的最大值**。
+
+Netty 的接收和发送 **ByteBuffer** 采用 **DIRECT BUFFERS**，使用堆外==**直接内存**==进行 **Socket 读写**，**不需要进行字节缓冲区的二次拷贝**。使用直接内存使得**数据可以不用拷贝到 JVM 内存**中，便可以**直接写入 Socket 中，这样就减少了拷贝的次数，这就是零拷贝**。
+
+JVM 对操作系统来说只是一个进程，网络 IO 的数据都是先到操作系统的内核数据缓冲区，然后再复制到进程缓冲区，如果 JVM 需要发送数据出去，则需要先复制到内核缓冲区，再通过网卡发出去。零拷贝就是 JVM 直接操作内核缓冲区里面的数据进行收发，避免了内核到应用进程之间的相互数据拷贝。
+
+> **ByteBuf内存池**
+
+为了尽量重用缓冲区， Netty 提供了**基于 ByteBuf 内存池的缓冲区重用机制**。需要的时候直接从**池子里获取 ByteBuf 使用**即可，使用完毕之后就重新放回到池子里去。
+
+按照**内存区域连贯性**来划分可以分为**池化内存**和**非池化内存**。按照是否池化划分：
+
+- 池化：**PooledBuffer**；
+- 非池化：UnPooledBuffer。
+
+**什么是池化？**
+
+一般申请内存是检查当前内存哪里有适合当前数据块大小的空闲内存块，如果有就将数据保存在当前内存块中。那么池化想做的事情是：既然每次来数据都要去找内存地址来存，**就先申请一块内存地址**，这一块就是我的专用空间，内存分配、回收我全权管理。池化主要解决了一个**内存碎片**的问题。
+
+Netty 采用了 jemalloc 的思想，这是 FreeBSD 实现的一种并发 malloc 的算法。jemalloc 依赖多个 Arena(分配器) 来分配内存，运行中的应用都有固定数量的多个 Arena，默认的数量与处理器的个数有关。系统中有多个 Arena 的原因是由于各个线程进行内存分配时竞争不可避免，这可能会极大的影响内存分配的效率，为了缓解高并发时的线程竞争，Netty 允许使用者创建多个分配器（Arena）来分离锁，提高内存分配效率。
+
+> **Netty高并发高性能架构的设计**
+
+Netty 为什么这么牛？
+
+- **主从 Reactor 线程模型，NIO 多路复用非阻塞**。
+- **无锁串行化设计思想**。即消息的处理尽可能在**同一个线程**内完成，期间不进行线程切换，这样就避免了多线程竞争和同步锁。一个 Pipeline 中有多个 Handler 也会在一个线程内全部串行执行，不涉及线程切换等问题。
+- **零拷贝**(直接内存的使用)。
+- **支持高性能序列化协议**。
+- **ByteBuf 内存池设计**。
+- **灵活的 TCP 参数配置能力**。可以在启动时根据业务场景配置 TCP 参数。
+- 并发优化。volatile 以及 CAS 等的合理使用。
+
+##### 3. 面试题
+
+> **为什么选择 Netty**
+
+适用于物联网大量短连接的场景；编码相对于 NIO 简单方便；利用了 Netty 的心跳机制来检测断线与否。
+
+> **Netty有什么应用？**
+
+聊天室、整合 WebSocket 协议实现弹幕系统、HTT P服务器等。
+
+WebSocket 是 html5 开始提供的一种浏览器与服务器间进行**全双工二进制通信协议**，其基于 TCP **双向全双工作**进行消息传递，同一时刻既可以发又可以接收消息，相比 HTTP 的半双工协议性能有很大的提升。
+
+**WebSocket 特点如下：**
+
+1. 单一 TCP **长连接**，采用**全双工**通信模式。
+2. 对代理、防火墙透明。
+3. **无头部信息**、消息更精简。
+4. 通过 **ping/pong** 来保活。
+5. 服务器可以主动推送消息给客户端，不在需要客户轮询。
+
+HTTP 是文本协议，而 **WebSocket 属于二进制协议**，通过规范进二进位来组成其报文。
+
+
 
 #### 分布式
 
@@ -1822,7 +4038,7 @@ limit 10;
 - Raft协议
 - ZAB协议
 - 基于Zookeeper的分布式锁
-- 
+- 如何保证一个接口是幂等的？
 
 
 

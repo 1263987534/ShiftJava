@@ -128,7 +128,7 @@ ChannelOutboundHandlerAdapter // 用于处理出站I/O操作
 
 ##### 9. ChannelPipline
 
-用于**保存 ChannelHandler 的 List**，用于**处理或拦截 Channel 的入站事件和出站操作**。ChannelPipeline 实现了一种**高级形式的拦截过滤器模式**，使用户可以完全控制事件的处理方式，以及 Channel 中各个的 ChannelHandler 如何**相互交互**。
+用于**保存 ChannelHandler 实现类的 List**，用于**处理或拦截 Channel 的入站事件和出站操作**。ChannelPipeline 实现了一种**高级形式的拦截过滤器模式**，使用户可以完全控制事件的处理方式，以及 Channel 中各个的 ChannelHandler 如何**相互交互**。
 
 在 Netty 中**每个 Channel 都有且仅有一个 ChannelPipeline 与之对应**，它们的组成关系如下： 
 
@@ -356,7 +356,7 @@ ByteBuf 提供了**两个索引**，一个用于**读取**数据，一个用于*
 
 <img src="assets/image-20200727214512299.png" alt="image-20200727214512299" style="zoom:45%;" />
 
-需要注意的是极限的**情况是 readerIndex 刚好读到了 writerIndex 写入的地方**。
+极限的**情况是 readerIndex 刚好读到了 writerIndex 写入的地方**。
 
 如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOfBoundsException 异常。
 
@@ -673,8 +673,6 @@ Netty 提供了一系列实用的**编码解码器**，他们都实现了 Channe
 
 Netty 提供了很多编解码器，比如**编解码字符串的 StringEncoder 和 StringDecoder**，编解码对象的 ObjectEncoder 和 ObjectDecoder 等。
 
-
-
 ```java
 bootstrap.group(bossGroup, workerGroup)
     .channel(NioServerSocketChannel.class)
@@ -856,11 +854,11 @@ ChannelGroup size=0
 
 ##### 2. 解决方案
 
-###### (1) 空格补全
+###### (1) 报文固定长度
 
 客户端在发送数据包的时候，每个包都**固定长度**，比如 1024 个字节大小，如果客户端发送的数据长度不足 1024 个字节，则通过**补充空格的方式补全到指定长度**。
 
-###### (2) 格式化数据
+###### (2) 添加报文分隔符
 
 每条数据有**固定的格式**（开始符、结束符），这种方法简单易行，但选择开始符和结束符的时候一定要注意每条数据的**内部一定不能出现**开始符或结束符。
 
@@ -1109,7 +1107,7 @@ public IdleStateHandler(int readerIdleTimeSeconds, int writerIdleTimeSeconds, in
 }
 ```
 
-这里解释下**三个参数**的含义：
+解释下**三个参数**的含义：
 
 - **readerIdleTimeSeconds**：读超时。即当在指定的时间间隔内没有从 Channel 读取到数据时，会触发一个 READER_IDLE 的 IdleStateEvent 事件。
 - **writerIdleTimeSeconds**：写超时。即当在指定的时间间隔内没有数据写入到 Channel 时，会触发一个 WRITER_IDLE 的 IdleStateEvent 事件。
@@ -1816,3 +1814,4 @@ Netty 就是对 Java NIO 代码的进一步封装。
 #### 参考资料
 
 - [Netty粘包拆包解析](https://www.cnblogs.com/AIPAOJIAO/p/10631551.html)
+- [Netty内存池](https://www.cnblogs.com/rickiyang/p/13100413.html)

@@ -114,7 +114,7 @@ public interface Supplier<T> {
 
 **Supplier\<T>** 无参数，返回一个结果。
 
-Supplier函数式接口为“**提供给定类型对象**”的行为提供了一种抽象。根据 Supplier 接口提供的 get 方法可以实现自定义的**“提供者”**的服务。例如：
+Supplier 函数式接口为“**提供给定类型对象**”的行为提供了一种抽象。根据 Supplier 接口提供的 get 方法可以实现自定义的**“提供者”**的服务。例如：
 
 ```csharp
 public void test(){
