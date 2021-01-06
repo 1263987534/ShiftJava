@@ -698,9 +698,33 @@ private boolean isSubStr(String str, String target) {
 }
 ```
 
+###### 调整数组顺序使奇数位于偶数前面
 
+**[题目剑指21](https://leetcode-cn.com/problems/diao-zheng-shu-zu-shun-xu-shi-qi-shu-wei-yu-ou-shu-qian-mian-lcof/)**：输入一个整数数组，实现一个函数来调整该数组中数字的顺序，使得所有奇数位于数组的前半部分，所有偶数位于数组的后半部分。需要保证奇数和奇数，偶数和偶数之间的**相对位置不变**。
 
+直接使用双指针即可。
 
+```java
+public int[] exchange(int[] nums) {
+    // 双指针
+    int left = 0, right = nums.length - 1;
+    // 两指针相遇
+    while (left < right) {
+        // 保证索引不越界的情况下从左找到一个偶数
+        while (left < right && (nums[left] & 1) == 1) left++;
+        // 保证索引不越界的情况下从右向左找到一个基数
+        while (left < right && (nums[right] & 1) == 0) right--;
+        swap(nums, left, right);
+    }
+    return nums;
+}
+
+private void swap(int[] nums, int left, int right) {
+    int tmp = nums[left];
+    nums[left] = nums[right];
+    nums[right] = tmp;
+}
+```
 
 ##### 区间类题目
 
@@ -1425,6 +1449,27 @@ private int minNumber(int[] nums, int left, int right) {
 }
 ```
 
+再来一种**允许重复**的简便写法：
+
+```java
+public int minArray(int[] nums) {
+    int left = 0, right = nums.length - 1;
+    // 整体二分模板
+    while (left < right) {
+        // 找中值
+        int mid = (left + right) / 2;
+        if (nums[mid] > nums[right]) {
+            left = mid + 1;
+        } else if (nums[mid] < nums[right]) {
+            right = mid;
+        } else {
+            right--;
+        }
+    }
+    return nums[left];
+}
+```
+
 **拓展：如何得到一个上面的旋转数组？**这里用 O(1) 的空间实现。**先分别把两个子数组内容逆序，然后再把整个数组进行逆序即可**。
 
 ###### 有序数组中的单一元素
@@ -1503,6 +1548,30 @@ public int kthSmallest(int[][] matrix, int k) {
     return low;
 }
 ````
+
+###### 0～n-1中缺失的数字
+
+**题目剑指53**：一个长度为 n-1 的递增排序数组中的所有数字都是**唯一**的，并且每个数字都在范围 **0～n-1** 之内。在范围 0～n-1 内的 n 个数字中**有且只有一个数字不在该数组中**，请找出这个数字。
+
+排序数组中的搜索问题，首先想到 **二分法** 解决。根据题意，数组可以按照以下规则划分为两部分。
+左子数组： nums[i] = i；
+右子数组： nums[i] != i；
+缺失的数字等于 “**右子数组的首位元素**” 对应的索引；因此考虑使用**二分法查找 “右子数组的首位元素”** 。
+
+```java
+public int missingNumber(int[] nums) {
+    int low = 0, high = nums.length - 1;
+    while(low <= high) {
+        int mid = (low + high) / 2;
+        if(nums[mid] == mid) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return low;
+}
+```
 
 
 
@@ -1707,7 +1776,11 @@ public int minPathLength(int[][] grids, int tr, int tc) {
 
 **[题目](https://leetcode-cn.com/problems/ju-zhen-zhong-de-lu-jing-lcof/)**：判断一个字符矩阵中是否包含给定字符串的路径。
 
-**经典回溯算法**：
+**经典回溯算法**：使用**回溯法（backtracking）**进行求解，它是一种**暴力搜索方法**，通过搜索**所有可能**的结果来求解问题。回溯法在一次搜索结束时需要**进行回溯（回退）**，将**这一次搜索过程中设置的状态进行清除**，从而开始一次**新的搜索过程**。
+
+例如下图示例中，从 f 开始，下一步有 4 种搜索可能，如果先搜索 b，需要将 b 标记为**已经使用**，防止重复使用。在**这一次搜索**结束之后，需要将 b 的**已经使用状态清除**，并搜索 c。
+
+<img src="assets/1563522147846.png" alt="1563522147846" style="zoom:40%;" />
 
 ```java
 char[][] matrix;
@@ -1742,6 +1815,62 @@ boolean dfs(int i, int j, int walkLen) {
         || dfs(i , j - 1, walkLen + 1);
     // 回溯,撤消修改
     matrix[i][j] = tmp;
+    return res;
+}
+```
+
+###### 机器人的运动范围
+
+**[题目剑指13](https://leetcode-cn.com/problems/ji-qi-ren-de-yun-dong-fan-wei-lcof/)**：地上有一个 **m 行和 n 列**的**方格**。一个机器人从坐标 **(0, 0)** 的格子开始移动，每一次只能向左右上下四个方向**移动一**格，但是**不能进入行坐标和列坐标**的数位**之和大于 k** 的格子。
+
+例如，当 k 为 18 时，机器人能够进入方格 (35, 37)，因为 **3+5+3+7=18**。但是它不能进入方格 (35, 38)，因为 3+5+3+8=19。请问该机器人能够达到**多少个格子**？
+
+```java
+// 全局计数器
+private int counter = 0;
+private int rows;
+private int cols;
+private int digitSum;
+private boolean[][] visited;
+
+public int movingCount(int i, int j, int sum) {
+    this.rows = i; this.cols = j; this.digitSum = sum;
+    // 标记是否已经访问
+    visited = new boolean[i][j];
+    // DFS
+    dfs(0, 0);
+    return counter;
+}
+
+private void dfs(int i, int j) {
+    // Base case 如果遇到越界或者已经访问的就退出
+    if (i < 0 || i >= rows || j < 0 || j >= cols || visited[i][j])
+        return;
+    // 标记已经访问的位置
+    visited[i][j] = true;
+    // 计算这个位置的数字是否符合标准
+    if (getSum(i, j) > digitSum) return;
+    // 合格计数器++
+    counter++;
+    // 继续DFS
+    dfs(i + 1, j);
+    dfs(i - 1, j);
+    dfs(i, j + 1);
+    dfs(i, j - 1);
+}
+// 求一个位置的各位之和
+private int getSum(int i, int j) {
+    int res = 0;
+    int a = i;
+    while(a != 0) {
+        res = res + a % 10;
+        a = a / 10;
+    }
+    a = j;
+    while(a != 0) {
+        res = res + a % 10;
+        a = a / 10;
+    }
     return res;
 }
 ```
@@ -1906,6 +2035,47 @@ private void backtrack(Deque<Integer> pathList, boolean[] visited, final int[] n
     }
 }
 ```
+
+###### 打印从1到最大的n位数
+
+**[题目剑指offer17](https://leetcode-cn.com/problems/da-yin-cong-1dao-zui-da-de-nwei-shu-lcof/)**：输入**数字 n**，按**顺序打印**出从 1 到**最大的 n 位**十进制数。比如输入 3，则打印出 1、2、3 一直到**最大的 3 位数**即 999。
+
+由于 **n 可能会非常大**，因此**不能直接用 int 表示数字，而是用 char 数组进行存储**。使用**回溯法**得到所有的数。
+
+````java
+// 用于记录每个位置char的数组
+char[] number;
+int[] res;
+int counter = 0;
+
+public int[] printNumbers(int n) {
+    if (n <= 0) return new int[]{};
+    // 存放结果的数组
+    res = new int[(int) Math.pow(10, n) - 1];
+    // 初始化一个num数组用于存放每一位
+    number = new char[n];
+    // 初始digit为0
+    dfs(0);
+    return res;
+}
+
+private void dfs(int digit) {
+    // 如果digit已经等于位数长度就打印出来
+    if (digit == number.length) {
+        int num = Integer.parseInt(new String(number));
+        if (num != 0) {
+            res[counter++] = num;
+        }
+        return;
+    }
+    // 递归打印
+    for (int i = 0; i < 10; i++) {
+        // 增加各个位的值
+        number[digit] = (char) (i + '0');
+        dfs(digit + 1);
+    }
+}
+````
 
 ###### 组合
 
@@ -3001,7 +3171,9 @@ public int trap2(int[] height) {
 
 📘 **公司**：字节、猿辅导
 
-**[题目](https://leetcode-cn.com/problems/search-a-2d-matrix-ii/)**：在二维有序数组中查找一个数。**从右往左，从上往下**遍历找。
+**[题目](https://leetcode-cn.com/problems/search-a-2d-matrix-ii/)**：在二维有序数组中查找一个数。**从右往左，从上往下**遍历找。该二维数组中的一个数，**小于它的数一定在其左边**，大于它的数一定在**其下边**。因此，从**右上角开始查找**，就可以根据 target 和当前元素的大小关系来缩小查找区间，当前元素的查找区间为左下角的所有元素 。
+
+<img src="assets/0ad9f7ba-f408-4999-a77a-9b73562c9088.gif" alt="image-20200618154803867" style="zoom: 67%;" />
 
 ```java
 public boolean searchMatrix(int[][] matrix, int target) {
@@ -3269,12 +3441,21 @@ public int majorityElement(int[] nums) {
 
 ```java
 public int majorityElement(int[] nums) {
-    int cnt = 0, majority = nums[0];
-    for (int num : nums) {
-        majority = (cnt == 0) ? num : majority;
-        cnt = (majority == num) ? cnt + 1 : cnt - 1;
+    int res = 0, score = 0;
+
+    for (int i = 0; i < nums.length; i++) {
+        // 票数为0则将当前值赋给目标数
+        if (score == 0) {
+            res = nums[i];
+        }
+        // 如果数相同则投票++,否则投票--
+        if (res == nums[i]) {
+            score++;
+        } else {
+            score--;
+        }
     }
-    return majority;
+    return res;
 }
 ```
 
@@ -3369,7 +3550,9 @@ public int[][] matrixReshape(int[][] nums, int r, int c) {
 输入: [1,3,4,2,2]  输出: 2
 ```
 
-由于数字范围已经给定，所以可以通过将数字放到其对应索引的位置处进行求解。
+由于数字范围已经给定，所以可以通过将数字放到其对应索引的位置处进行求解。以 (2, 3, 1, 0, 2, 5) 为例，**遍历**到位置 4 时，该位置上的数为 2，但是第 2 个位置上已经有一个 2 的值了，因此可以知道 2 重复：
+
+<img src="assets/49d2adc1-b28a-44bf-babb-d44993f4a2e3.gif" alt="image-20200618154803867" style="zoom: 67%;" />
 
 ```java
 public int findDuplicate(int[] nums) {
@@ -3396,6 +3579,114 @@ private void swap(int[] nums, int i, int j) {
     nums[j] = t;
 }
 ```
+
+###### 数组的度
+
+**[题目697](https://leetcode-cn.com/problems/degree-of-an-array/)**：给定一个非空且只包含非负数的整数数组 nums, 数组的度的定义是指数组里任一元素出现频数的最大值。找到与 nums 拥有**相同大小的度的最短连续子数组**，返回其长度。
+
+```
+输入: [1,2,2,3,1,4,2]  输出: 6
+解释：去掉1的剩下的子数组。
+```
+
+利用一个 map 记录所有**元素出现的次数**，一个 map 记录每个元素**最后出现的位置**，一个 map 记录每个元素**第一次出现的位置**。
+
+```java
+public int findShortestSubArray(int[] nums) {
+    Map<Integer, Integer> cntMap = new HashMap<>();
+    Map<Integer, Integer> lastIndexMap = new HashMap<>();
+    Map<Integer, Integer> firstIndexMap = new HashMap<>();
+    for (int i = 0; i < nums.length; i++) {
+        int num = nums[i];
+        // 把全部的字符放入到计数map中
+        cntMap.put(num, cntMap.getOrDefault(num, 0) + 1);
+        // 记录某个数最后出现的位置
+        lastIndexMap.put(num, i);
+        // 记录某个数最开始出现的位置
+        if (!firstIndexMap.containsKey(num)) {
+            firstIndexMap.put(num, i);
+        }
+    }
+    // 寻找出现最多的次数
+    int maxCnt = 0;
+    for (int num : nums) {
+        maxCnt = Math.max(maxCnt, cntMap.get(num));
+    }
+    int res = nums.length;
+    for (int i = 0; i < nums.length; i++) {
+        int num = nums[i];
+        int cnt = cntMap.get(num);
+        if (cnt != maxCnt) continue;
+        res = Math.min(res, lastIndexMap.get(num) - firstIndexMap.get(num) + 1);
+    }
+    return res;
+}
+```
+
+###### 最多能完成排序的块
+
+**[题目769](https://leetcode-cn.com/problems/max-chunks-to-make-sorted/)**：已知数组 arr 是 **[0, 1, ..., arr.length - 1]** 的一种**乱序排列**。分隔数组，使得对每部分排序后数组就为有序。最多能将数组分成多少块？
+
+```java
+输入: arr = [1,0,2,3,4]   输出: 4
+解释: 可以把它分成两块，例如 [1, 0], [2, 3, 4]。 然而分成 [1, 0], [2], [3], [4] 可以得到最多的块数。
+```
+
+注意这里元素的范围是 0 ~ n - 1，因此可以利用这个特点求解。
+
+```java
+public int maxChunksToSorted(int[] nums) {
+    if (nums == null) return 0;
+    int res = 0;
+    int curMax = nums[0];
+    for (int i = 0; i < nums.length; i++) {
+        // 不断更新当前出现过的最大值
+        curMax = Math.max(curMax, nums[i]);
+        // 如果当前最大值就是索引值那么则可算作一个块
+        if (curMax == i) {
+            res++;
+        }
+    }
+    return res;
+}
+```
+
+###### 扑克牌顺子
+
+**题目剑指61**：**五张牌**，其中大小鬼为**癞子**，牌面为 0。判断这五张牌是否能组成**顺子**。
+
+<img src="assets/1563522898023.png" alt="1563522898023" style="zoom:60%;" />
+
+首先**统计癞子牌的张数，然后排序，然后遍历看实际需要多少个癞子牌才能达标**。
+
+```java
+public boolean isStraight(int[] nums) {
+    // Base case
+    if (nums.length < 5) return false;
+    // 先排个序
+    Arrays.sort(nums);
+    // 统计癞子数量
+    int king = 0;
+    for (int num : nums) if (num == 0) king++;
+	// 统计需要多少个癞子
+    int need = 0;
+    // 使用癞子去补全不连续的顺子,这里从癞子数开始遍历
+    for (int i = king; i < nums.length - 1; i++) {
+        // 如果前后相同，直接不行
+        if (nums[i + 1] == nums[i]) {
+            return false;
+        }
+        // 如果前后不一致则计算需要多少个King才能补齐
+        need = need + (nums[i + 1] - nums[i] - 1);
+    }
+    // 最后判断king数量是否超标
+    return king >= need;
+}
+```
+
+
+
+
 
 ##### 链表题目
 
@@ -3873,6 +4164,8 @@ public ListNode oddEvenList(ListNode head) {
 
 <img src="assets/image-20200820164813825.png" alt="image-20200820164813825" style="zoom:70%;" />
 
+迭代法：
+
 ```java
 public ListNode deleteDuplicates(ListNode head) {
     if (head == null) return head;
@@ -3901,6 +4194,31 @@ public ListNode deleteDuplicates(ListNode head) {
         slow = fast;
     }
     return dummy.next;
+}
+```
+
+递归法：
+
+```java
+public ListNode deleteDuplication(ListNode pHead) {
+    // 递归到了链表尾部
+    if (pHead == null || pHead.next == null) return pHead;
+    // 下一个结点
+    ListNode next = pHead.next;
+    // 说明重复则删除
+    if (pHead.val == next.val) {
+        while (next != null && pHead.val == next.val) {
+            next = next.next;
+        }
+        // 递归删除
+        return deleteDuplication(next);
+        
+        // 说明没有重复
+    } else {
+        // 当前结点的下一个就是递归返回的头结点
+        pHead.next = deleteDuplication(pHead.next);
+        return pHead;
+    }
 }
 ```
 
@@ -4014,7 +4332,7 @@ public ListNode EntryNodeOfLoop(ListNode head) {
 }
 ```
 
-###### 复制带有随机指针的链表
+###### 带有随机指针链表的复制
 
 📘 **公司**：字节
 
@@ -4121,6 +4439,36 @@ ListNode merge(ListNode a, ListNode b){
     return head.next;
 }
 ```
+
+###### 圆圈中剩下的数
+
+**题目剑指62**：让小朋友们围成一个**大圈**。然后，随机指定一个**数 m**，让编号**为 0 的小朋友开始报数**。每次喊到 **m-1** 的那个小朋友要出列唱首歌，然后可以在礼品箱中任意的挑选礼物，并且**不再回到圈中**，从他的下一个小朋友开始，继续 **0...m-1 报数** .... 这样下去 .... 直到剩下最后一个小朋友，可以不用表演。
+
+通过模拟**链表删除**的方式进行。这个方便理解，面试用就行了吧。。
+
+```java
+public int lastRemaining(int n, int m) {
+    // 构造一个链表
+    ArrayList<Integer> list = new ArrayList<>();
+    // 将数字加到链表中
+    for (int i = 0; i < n; i++) list.add(i);
+
+    int index = 0;
+    // 不断移除一个元素直到只剩下一个元素
+    while (list.size() > 1) {
+        // index +=m-1;
+        // while(index > list.size() - 1) index = index-list.size();
+        // 上面两步等价于下面
+        // 用需要报的数对当前链表长度取模
+        index = (index + m - 1) % list.size();
+        // 去掉这个位置的元素
+        list.remove(index);
+    }
+    return list.get(0);
+}
+```
+
+
 
 ##### 栈与队列题目
 
@@ -4475,6 +4823,41 @@ public int longestValidParentheses(String s) {
     return res;
 }
 ```
+
+###### 栈的压入弹出序列
+
+**题目剑指31**：输入**两个整数序列**，第一个序列表示**栈的压入顺序**，请判断第二个序列是否为该**栈的弹出顺序**。假设压入栈的所有数字均不相等。例如序列 1, 2, 3, 4, 5 是某栈的**压入**顺序，序列 4, 5, 3, 2, 1 是该压栈序列对应的一个弹出序列，但 4,3,5,1,2 就不可能是该压栈序列的弹出序列。
+
+**使用一个栈来模拟压入弹出操作**。
+
+**不断按照压入顺序压入模拟栈中，每次都与弹出序列进行对比**，如果相同，则**弹出模拟栈顶**的元素，最后只需看看栈是否为空，如果是合适的顺序，那么**模拟栈肯定为空**。
+
+```java
+public boolean IsPopOrder(int[] push, int[] pop) {
+
+    // 求长度
+    int len = push.length;
+    Stack<Integer> stack = new Stack<>();
+    // 初始化压栈弹栈指针都为0
+    int pushIndex = 0;
+    int popIndex = 0;
+
+    // 压入索引小于长度
+    while (pushIndex < len) {
+        // 尝试压入一个元素并移动压入指针
+        stack.push(push[pushIndex]);
+        pushIndex++;
+        // 每次压入一个元素之后判断当前栈顶是不是跟当前的弹出序列匹配，是的话就持续弹出栈
+        while (!stack.isEmpty() && pushIndex <= len && stack.peek() == pop[popIndex]) {
+            stack.pop();
+            popIndex++;
+        }
+    }
+    return stack.isEmpty();
+}
+```
+
+
 
 ##### 树题目
 
@@ -5247,6 +5630,39 @@ TreeNode process(int preRoot, int inLeft, int inRight) {
 }
 ```
 
+还有一种**直接使用列表**的解法：
+
+```java
+public TreeNode buildTree2(int[] preorder, int[] inorder) {
+
+    // 下面四行代码其实就是把数组转换成list
+    List<Integer> pre = new ArrayList<>();
+    for (int i : preorder) pre.add(i);
+    List<Integer> in = new ArrayList<>();
+    for (int i : inorder) in.add(i);
+
+    // 其实这个函数就这一行
+    return process(pre, in);
+}
+
+TreeNode process(List<Integer> pre, List<Integer> in) {
+    // 递归停止条件，就是遍历完了列表
+    if (pre.size() == 0) return null;
+
+    // 前序遍历的第一个元素就是root
+    int val = pre.get(0);
+    TreeNode root = new TreeNode(val);
+
+    // 从中序遍历里面找到root的位置，就把中序遍历分成两部分了
+    int rootIndex = in.indexOf(root.val);
+
+    //别问 问就是递归
+    root.left = process(pre.subList(1, 1 + rootIndex), in.subList(0, rootIndex));
+    root.right = process(pre.subList(1 + rootIndex, pre.size()), in.subList(1 + rootIndex, in.size()));
+    return root;
+}
+```
+
 ###### 中序和后序重建二叉树
 
 📘 **公司**：猿辅导
@@ -5290,6 +5706,104 @@ public TreeNode buildTree(int inStart, int inEnd, int postStart, int postEnd) {
 ###### 有序链表构造平衡二叉搜索树
 
 **[题目109](给定一个单链表，其中的元素按升序排序，将其转换为高度平衡的二叉搜索树。)**：
+
+###### 序列化与反序列化二叉树
+
+**题目剑指37**：请实现两个函数，分别用来**序列化和反序列化二叉树**。
+
+###### (1) 先序方式
+
+需要用 **# 来表示 null** 节点，防止不同的位置的节点出现歧义。
+
+```java
+private String deserializeStr;
+
+// 前序遍历方式序列化
+public String serialize(TreeNode root) {
+    if (root == null) return "#";
+    return root.val + "!" + serialize(root.left) + "!" + serialize(root.right);
+}
+
+public TreeNode deserialize(String str) {
+    deserializeStr = str;
+    return deserialize();
+}
+
+// 反序列化为二叉树
+private TreeNode deserialize() {
+    // Base case
+    if (deserializeStr.length() == 0) return null;
+    // 找到下一个结点的值
+    int index = deserializeStr.indexOf(" ");
+    String nodeString = index == -1 ? deserializeStr : deserializeStr.substring(0, index);
+    // 更新原始的反序列化字符串
+    deserializeStr = index == -1 ? "" : deserializeStr.substring(index + 1);
+    // 如果是#代表是null值
+    if (nodeString.equals("#")) return null;
+    int val = Integer.parseInt(nodeString);
+    TreeNode root = new TreeNode(val);
+    // 递归解析左右子结点
+    root.left = deserialize();
+    root.right = deserialize();
+    // 然后返回自己
+    return root;
+}
+```
+
+###### (2) 层序方式
+
+利用**层序遍历**的方式实现序列化与反序列化。面试用这个！
+
+```java
+public String serialize2(TreeNode root) {
+    if (root == null) return "";
+    StringBuilder res = new StringBuilder();
+    Queue<TreeNode> queue = new LinkedList<>();
+    queue.add(root);
+    while (!queue.isEmpty()) {
+        TreeNode node = queue.poll();
+        if (node != null) {
+            res.append(node.val + "#");
+            // 这里即使是null节点也需要加进去
+            queue.add(node.left);
+            queue.add(node.right);
+        } else {
+            // 空节点单独序列化
+            res.append("null#");
+        }
+    }
+    res.deleteCharAt(res.length() - 1);
+    return res.toString();
+}
+
+public TreeNode deserialize2(String data) {
+    if (data.length() == 0) return null;
+    // 拆分成结点值
+    String[] nums = data.split("#");
+    // 构造根结点
+    TreeNode root = new TreeNode(Integer.parseInt(nums[0]));
+    // 也是利用队列来不断出队列进行设置
+    Queue<TreeNode> queue = new LinkedList<>();
+    queue.add(root);
+    int numIndex = 1;
+    while (!queue.isEmpty()) {
+        // 弹出根结点
+        TreeNode node = queue.poll();
+        // 不断设置其左右结点
+        if (!"null".equals(nums[numIndex])) {
+            node.left = new TreeNode(Integer.parseInt(nums[numIndex]));
+            queue.add(node.left);
+        }
+        numIndex++;
+        if (!"null".equals(nums[numIndex])) {
+            node.right = new TreeNode(Integer.parseInt(nums[numIndex]));
+            queue.add(node.right);
+        }
+        numIndex++;
+    }
+    return root;
+}
+```
 
 ###### 二叉树最大直径
 
@@ -5618,7 +6132,104 @@ private boolean isSymmetric(TreeNode t1, TreeNode t2) {
 }
 ```
 
+###### 二叉树的镜像
 
+**题目**：将一棵树变成其镜像的样子。直接递归就行了，**从上到下不断交换两个节点**，类似前序遍历的框架。
+
+```java
+public void Mirror(TreeNode root) {
+    // base case
+    if(root == null) {
+        return;
+    }
+    // 直接交换两个节点
+    if(root != null) {
+        TreeNode temp = root.left;
+        root.left = root.right;
+        root.right = temp;
+    }
+    // 递归
+    Mirror(root.left);
+    Mirror(root.right);
+}
+```
+
+###### 包含父节点指针的二叉树下一个结点
+
+**题目**：给定一个**二叉树**和其中的**一个结点**，请找出**中序遍历**顺序的**下一个结点**并且返回。注意，树中的结点不仅包含左右子结点，同时包含**指向父结点**的指针。
+
+```java
+private static class Node {
+    int val;
+    Node left = null;
+    Node right = null;
+    Node next = null;
+
+    Node(int val) {
+        this.val = val;
+    }
+}
+```
+
+可以直接用中序遍历找一波，但是这样估计就白给了。由于有**指向父节点**的指针，所以是可以利用的。
+
+① 如果一个节点的**右子树不为空**，那么该节点的**下一个节点是右子树的最左节点**；
+
+② 否则，**向上找第一个==左链接==指向的树包含该节点的祖先节点**。
+
+```java
+public Node GetNext(Node pNode) {
+    // 如果右子树不为空
+    if (pNode.right != null) {
+        // 找右子树最左的节点并返回
+        Node node = pNode.right;
+        while (node.left != null) {
+            node = node.left;
+        }
+        return node;
+
+        // 否则向上找第一个左链接指向的树包含该节点的祖先节点
+    } else {
+        // 这里是排除当前节点是最后一个节点的情况
+        while (pNode.next != null) {
+            // 得到父节点
+            Node parent = pNode.next;
+            // 如果当前节点是其父节点的左节点就是找到了
+            if (parent.left == pNode)
+                return parent;
+            // 否则继续向父节点查找
+            pNode = pNode.next;
+        }
+    }
+    // 没找到说明是最后一个节点，返回null
+    return null;
+}
+```
+
+###### 树的子结构
+
+**[题目剑指26](https://leetcode-cn.com/problems/shu-de-zi-jie-gou-lcof/)**：输入两棵二叉树 A，B，判断 B 是不是 A 的**子结构**。（ps：我们约定空树不是任意一个树的子结构）
+
+<img src="assets/1563522392214.png" alt="1563522392214" style="zoom:60%;" />
+
+若树 B 是树 A 的子结构，则子结构的**根节点**可能为树 A 的**任意一个节点**，所以需要挨着判断是不是。这里需要对A的全部结点作为根结点与B作为根结点进行匹配。
+
+```java
+public boolean HasSubtree(TreeNode root1, TreeNode root2) {
+    // base case
+    if (root1 == null || root2 == null) return false;
+    // 这里需要对A的全部结点作为根结点与B作为根结点进行匹配
+    return recur(root1, root2) || HasSubtree(root1.left, root2) || HasSubtree(root1.right, root2);
+}
+
+// 判断以当前两个根结点是不是子结构
+private boolean recur(TreeNode root1, TreeNode root2) {
+    if (root2 == null) return true;
+    if (root1 == null) return false;
+    if (root1.val != root2.val) return false;
+    return recur(root1.left, root2.left) && recur(root1.right, root2.right);
+}
+```
 
 
 
@@ -7207,6 +7818,70 @@ public int numDecodings2(String str) {
 }
 ```
 
+###### 正则表达式匹配
+
+**[题目剑指19](https://leetcode-cn.com/problems/zheng-ze-biao-da-shi-pi-pei-lcof/)**：请实现一个函数用来**匹配包括 '.' 和 '\*' 的正则表达式**。模式中的字符 '.' 表示**任意一个字符**，而 '\*' 表示它**前面**的字符可以**出现任意次（包含 0 次）**。在本题中，匹配是指字符串的所有字符匹配**整个模式**。例如，字符串 "aaa" 与模式 "a.a" 和 "ab\*ac\*a" 匹配，但是与 "aa.a" 和 "ab\*a" 均不匹配。
+
+应该注意到，**'.'** 是用来当做**一个**任意字符，而 **'\*'** 是用来**重复前面**的字符。这两个的作用不同，不能把 '.' 的作用和 '\*' 进行类比，从而把它当成重复前面字符一次。
+
+```java
+public boolean match(char[] str, char[] pattern) {
+
+    int m = str.length, n = pattern.length;
+    boolean[][] dp = new boolean[m + 1][n + 1];
+
+    dp[0][0] = true;
+    for (int i = 1; i <= n; i++)
+        if (pattern[i - 1] == '*')
+            dp[0][i] = dp[0][i - 2];
+
+    for (int i = 1; i <= m; i++)
+        for (int j = 1; j <= n; j++)
+            if (str[i - 1] == pattern[j - 1] || pattern[j - 1] == '.')
+                dp[i][j] = dp[i - 1][j - 1];
+    else if (pattern[j - 1] == '*')
+        if (pattern[j - 2] == str[i - 1] || pattern[j - 2] == '.') {
+            dp[i][j] |= dp[i][j - 1]; // a* counts as single a
+            dp[i][j] |= dp[i - 1][j]; // a* counts as multiple a
+            dp[i][j] |= dp[i][j - 2]; // a* counts as empty
+        } else
+            dp[i][j] = dp[i][j - 2];   // a* only counts as empty
+
+    return dp[m][n];
+}
+```
+
+###### 丑数
+
+**题目剑指49**：把只包含因子 **2、3 和 5** 的数称作**丑数**（Ugly Number）。例如 6、8 都是丑数，但 14 不是，因为它包含因子 7。习惯上我们把 **1 当做是第一个丑数**。求按从小到大的顺序的第 N 个丑数。
+
+**定义三个指针 p2, p3, p5，p2 指向的数字永远乘 2，p3 指向的数字永远乘 3，p5 指向的数字永远乘 5。**
+初始化所有指针都指向**第一个丑数**，即 1。
+
+丑数**只包含因子 2, 3, 5**，因此有 “**丑数 = 某较小丑数 × 某因子**” （例如：10 = 5 X 2）
+
+我们从 **2dp[p2], 3dp[p3], 5dp[p5] 选取最小的一个数字**，作为**新的丑数**。这边新的丑数就是 2dp[p2]=2*1=2，然后p2++。此时 p3 和 p5 指向第 1 个丑数，p2 指向第 2 个丑数。然后重复上一步。
+
+这里基于的一个事实是，**丑数数列是递增**的，当 p5 指针在当前位置时，后面的数乘以 5 必然比前面的数乘以 5 大，所以下一个丑数必然是**先考虑前面的数乘以 5**。p2, p3 同理，所以**才可以使用指针**。
+
+```java
+public int nthUglyNumber(int n) {
+    // 初始化三个指针分别记录
+    int p2 = 0, p3 = 0, p5 = 0;
+    int[] dp = new int[n];
+    dp[0] = 1;
+    for (int i = 1; i < n; i++) {
+        // 选择三个数中最小的一个
+        dp[i] = Math.min(dp[p2] * 2, Math.min(dp[p3] * 3, dp[p5] * 5));
+        // 看当前的数是由哪个位置来的，增加位置索引
+        if (dp[i] == dp[p2] * 2) p2++;
+        if (dp[i] == dp[p3] * 3) p3++;
+        if (dp[i] == dp[p5] * 5) p5++;
+    }
+    return dp[n - 1];
+}
+```
+
 
 
 ##### 字符串题目
@@ -7574,9 +8249,27 @@ public int longestPalindrome(String str) {
 }
 ```
 
+###### 第一个只出现一次的字符位置
 
+**题目剑指50**：在一个**字符串**中找到**第一个只出现一次**的字符，并返回**它的位置**。
 
+可以使用**整型数组**代替 **HashMap** 来统计各个字符出现的次数，从而将空间复杂度由 O(N) 降低为 O(1)。面试用这个！
 
+```java
+public char firstUniqChar(String s) {
+    int[] temp = new int[256];
+    char[] nums = s.toCharArray();
+    // 统计每个字符串出现次数
+    for(int i = 0; i < nums.length; i++) {
+        temp[nums[i]]++;
+    }
+    // 从头开始遍历找到第一个只出现一次的字符
+    for(int i = 0; i < nums.length; i++) {
+        if(temp[nums[i]] == 1) return nums[i];
+    }
+    return ' ';
+}
+```
 
 ##### 数学相关题目
 
@@ -8014,7 +8707,7 @@ public boolean isPowerOfFour(int num) {
 }
 ```
 
-###### 只出现一次的一个数字
+###### 只出现一次的一个数字I
 
 **题目**：数组中元素两两成对，除了一个元素只出现一次，找出该元素。
 
@@ -8030,6 +8723,46 @@ public int singleNumber(int[] nums) {
     return res;
 }
 ```
+
+###### 只出现一次的一个数字II
+
+**题目剑指56**：在一个数组 `nums` 中除一个数字只出现一次之外，其他数字都出现了**三次**。请找出那个只出现一次的数字。
+
+如下图所示，考虑数字的二进制形式，对于出现三次的数字，各 **二进制位** 出现的次数都是 **3 的倍数**。
+因此，统计所有数字的各二进制位**中 1 的出现次数**，并**对 3 求余**，结果则为只出现一次的数字。
+
+<img src="assets/image-20200806143202471.png" alt="image-20200806143202471" style="zoom:67%;" />
+
+一种高级方法：
+
+```java
+public int singleNumber(int[] nums) {
+    int ones = 0, twos = 0;
+    for(int num : nums){
+        ones = ones ^ num & ~twos;
+        twos = twos ^ num & ~ones;
+    }
+    return ones;
+}
+```
+
+ ```java
+public int singleNumber2(int[] nums) {
+    int[] counts = new int[32];
+    for(int num : nums) {
+        for(int j = 0; j < 32; j++) {
+            counts[j] = counts[j] + (num & 1);
+            num = num >>> 1;
+        }
+    }
+    int res = 0, m = 3;
+    for(int i = 0; i < 32; i++) {
+        res <<= 1;
+        res |= counts[31 - i] % m;
+    }
+    return res;
+}
+ ```
 
 ###### 只出现一次的两个数字
 
@@ -8635,6 +9368,66 @@ public static void merge(int[] array, int left, int mid, int right) {
 
 撸一个堆排序。
 
+###### 数据流的中位数
+
+**题目**：不断求一个数据流的中位数。
+
+**插入要保证两个堆处于平衡状态**。counter 为偶数的情况下插入到**右半边**。因为右半边元素都要大于左半边，但是新插入的元素**不一定比左半边元素来的大**，因此需要**先将元素插入左半边**，然后利用左半边为大顶堆的特点，取出堆顶元素即为最大元素，此时插入右半边。当 counter 为奇数则**反过来**。获取中位数的时候，如果个数为偶数，则两边各取一个求中值，如果为奇数则取右边堆的元素。
+
+```java
+// 小顶堆，保存较大的一半
+Queue<Integer> left = new PriorityQueue<>();
+// 大顶堆，保存较小的一半
+Queue<Integer> right = new PriorityQueue<>((x, y) -> (y - x));
+// 当前数据流读入的元素个数
+private int counter = 0;
+
+public void addNum(int num) {
+    if (counter % 2 == 0) {
+        left.add(num);
+        int max = left.poll();
+        right.add(max);
+    } else {
+        right.add(num);
+        int min = right.poll();
+        left.add(min);
+    }
+    counter++;
+}
+public double findMedian() {
+    if (counter % 2 == 0)
+        return (left.peek() + right.peek()) / 2.0;
+    else
+        return (double) right.peek();
+}
+```
+
+###### 把数组排成最小的数
+
+**题目剑指45**：输入一个**正整数数组**，把数组里所有数字拼接起来**排成一个数**，打印能拼接出的所有数字中**最小**的一个。例如输入数组 {3，32，321}，则打印出这三个数字能排成的最小数字为 321323。
+
+本质上是一个**排序问题**，在比较两个字符串 S1 和 S2 的大小时，应该比较的是 **S1+S2 和 S2+S1** 的大小，如果 S1+S2 < S2+S1，那么应该把 S1 排在**前面**，否则应该把 S2 排在前面。
+
+```java
+public String minNumber(int[] numbers) {
+    // Base case
+    if (numbers == null || numbers.length == 0) return "";
+    int n = numbers.length;
+    // 将数字转换为字符串
+    String[] nums = new String[n];
+    for (int i = 0; i < n; i++)
+        nums[i] = numbers[i] + "";
+    // 排序
+    Arrays.sort(nums, (s1, s2) -> (s1 + s2).compareTo(s2 + s1));
+    StringBuilder res = new StringBuilder();
+    for (String str : nums)
+        res.append(str);
+    return res.toString();
+}
+```
+
+
+
 ##### 贪心题目
 
 ###### 跳跃游戏
@@ -8759,6 +9552,165 @@ public boolean canPlaceFlowers(int[] nums, int n) {
         }
     }
     return count >= n;
+}
+```
+
+##### 图题目
+
+###### 判断是否是二分图
+
+**[题目785](https://leetcode-cn.com/problems/is-graph-bipartite/)**：如果能将一个图的节点集合分割成**两个独立的子集A和B**，并使图中的**每一条边的两个节点一个来自A集合，一个来自B集合**，就将这个图称为二分图。判断一个图是否是二分图。
+
+```java
+示例 1: 输入: [[1,3], [0,2], [1,3], [0,2]]  输出: true
+解释: 无向图如下:
+0----1
+|    |
+|    |
+3----2
+可以将节点分成两组: {0, 2} 和 {1, 3}。
+```
+
+```java
+public boolean isBipartite(int[][] graph) {
+    int[] colors = new int[graph.length];
+    Arrays.fill(colors, -1);
+    // 处理图不是连通的情况
+    for (int i = 0; i < graph.length; i++) {
+        if (colors[i] == -1 && !isBipartite(i, 0, colors, graph)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+private boolean isBipartite(int curNode, int curColor, int[] colors, int[][] graph) {
+    if (colors[curNode] != -1) {
+        return colors[curNode] == curColor;
+    }
+    colors[curNode] = curColor;
+    for (int nextNode : graph[curNode]) {
+        if (!isBipartite(nextNode, 1 - curColor, colors, graph)) {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+###### 课程学习的合法性
+
+**[题目207](https://leetcode-cn.com/problems/course-schedule/)**：必须选修 num 门课程，记为 0 到 num - 1 。在选修某些课程之前需要一些先修课程。 例如，想要学习课程 0 需要先完成课程 1 ，这用一个匹配来表示他们：[0, 1]。给定课程总量以及它们的先决条件，判断是否可能完成所有课程的学习。
+
+```
+输入: 2, [[1,0]]  输出: true
+解释: 总共有 2 门课程。学习课程 1 之前，你需要完成课程 0。所以这是可能的。
+```
+
+```java
+输入: 2, [[1,0],[0,1]]  输出: false
+解释: 总共有 2 门课程。学习课程 1 之前，你需要先完成课程 0；并且学习课程 0 之前，你还应先完成课程 1。这是不可能的。
+```
+
+这是**拓扑排序**的问题。但是本题不需要使用拓扑排序，只需要**检测有向图是否存在环**即可。
+
+```java
+public boolean canFinish(int num, int[][] courses) {
+
+    List<Integer>[] graph = new List[num];
+    for (int i = 0; i < num; i++) {
+        graph[i] = new ArrayList<>();
+    }
+    for (int[] pre : courses) {
+        graph[pre[0]].add(pre[1]);
+    }
+    boolean[] globalMarked = new boolean[num];
+    boolean[] localMarked = new boolean[num];
+    for (int i = 0; i < num; i++) {
+        if (hasCycle(globalMarked, localMarked, graph, i)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+private boolean hasCycle(boolean[] globalMarked, boolean[] localMarked, List<Integer>[] graph, int curNode) {
+
+    if (localMarked[curNode]) {
+        return true;
+    }
+    if (globalMarked[curNode]) {
+        return false;
+    }
+    globalMarked[curNode] = true;
+    localMarked[curNode] = true;
+    // 遍历节点的next节点
+    for (int nextNode : graph[curNode]) {
+        if (hasCycle(globalMarked, localMarked, graph, nextNode)) {
+            return true;
+        }
+    }
+    localMarked[curNode] = false;
+    return false;
+}
+```
+
+###### 课程学习的排课顺序
+
+**[题目210](https://leetcode-cn.com/problems/course-schedule-ii/)**：题目跟上面类似，给定课程总量以及它们的先决条件，不过这里是返回为了学完所有课程所安排的学习顺序。
+
+```java
+输入: 4, [[1,0],[2,0],[3,1],[3,2]]   输出: [0,1,2,3] or [0,2,1,3]
+解释: 总共有 4 门课程。要学习课程 3，你应该先完成课程 1 和课程 2。并且课程 1 和课程 2 都应该排在课程 0 之后。因此，一个正确的课程顺序是 [0,1,2,3] 。另一个正确的排序是 [0,2,1,3] 。
+```
+
+使用 **DFS 来实现拓扑排序**，使用一个**栈**存储后序遍历结果，这个**栈的逆序结果就是拓扑排序结果**。
+
+证明：对于任何先序关系：v->w，后序遍历结果可以保证 w 先进入栈中，因此栈的逆序结果中 v 会在 w 之前。
+
+```java
+public int[] findOrder(int num, int[][] courses) {
+    List<Integer>[] graph = new List[num];
+    for (int i = 0; i < num; i++) {
+        graph[i] = new ArrayList<>();
+    }
+    for (int[] pre : courses) {
+        graph[pre[0]].add(pre[1]);
+    }
+    Stack<Integer> postOrder = new Stack<>();
+    boolean[] globalMarked = new boolean[num];
+    boolean[] localMarked = new boolean[num];
+    for (int i = 0; i < num; i++) {
+        if (hasCycle(globalMarked, localMarked, graph, i, postOrder)) {
+            return new int[0];
+        }
+    }
+    int[] orders = new int[num];
+    for (int i = num - 1; i >= 0; i--) {
+        orders[i] = postOrder.pop();
+    }
+    return orders;
+}
+
+private boolean hasCycle(boolean[] globalMarked, boolean[] localMarked, List<Integer>[] graph,
+                         int curNode, Stack<Integer> postOrder) {
+
+    if (localMarked[curNode]) {
+        return true;
+    }
+    if (globalMarked[curNode]) {
+        return false;
+    }
+    globalMarked[curNode] = true;
+    localMarked[curNode] = true;
+    for (int nextNode : graph[curNode]) {
+        if (hasCycle(globalMarked, localMarked, graph, nextNode, postOrder)) {
+            return true;
+        }
+    } 
+    localMarked[curNode] = false;
+    postOrder.push(curNode);
+    return false;
 }
 ```
 
@@ -9466,7 +10418,7 @@ public class Storage {
 
 ###### LRU(H)
 
-📘 **公司**：字节(2)、快手
+📘 **公司**：字节(6)、快手
 
 LRU 特点：查找快，插入快，删除快，有顺序之分。其数据结构如下：
 

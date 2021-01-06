@@ -771,9 +771,9 @@ public class B {
 
 结果：项目启动失败抛出异常 **BeanCurrentlyInCreationException**。
 
-**构造器注入**构成的循环依赖问题是**无法解决**的，只能抛出 BeanCurrentlyInCreationException 异常表示循环依赖。这也是构造器注入的最大劣势（但它也有很多独特的优势）。
+**构造器注入**构成的循环依赖问题是**无法解决**的，只能抛出 BeanCurrentlyInCreationException **异常**表示循环依赖。这也是构造器注入的最大劣势（但它也有很多独特的优势）。
 
-**根本原因**：Spring 解决循环依赖依靠的是 Bean 的“**中间态**”这个概念，而这个**中间态指的是已经实例化，但还没初始化的状态**。而构造器是需要完成实例化的对象，所以构造器的循环依赖无法解决。
+**根本原因**：Spring 解决循环依赖依靠的是 Bean 的“**中间态**”这个概念，这个**中间态指的是已经实例化，但还没初始化的状态**。而构造器是需要完成实例化的对象，所以构造器的循环依赖无法解决。
 
 ###### (2) setter方法注入循环依赖
 
@@ -815,7 +815,7 @@ public class B {
 }
 ```
 
-prototype 字段属性注入循环依赖问题也是无法解决的。
+prototype 字段属性注入循环依赖问题也是**无法解决**的。
 
 ##### 3. 原理分析
 
@@ -825,17 +825,17 @@ Spring 创建 Bean 的流程大致如下：
 
 ![image-20200803145712274](assets/image-20200803145712274.png)
 
-对 Bean 的创建最为核心三个方法解释如下：
+对 Bean 的创建最为核心的**三个方法**解释如下：
 
-- createBeanInstance：**实例化**，其实也就是调用对象的构造方法实例化对象。
-- **populateBean**：**填充属性**，这一步主要是对bean的依赖属性进行注入(@Autowired)。
-- **initializeBean**：回到一些形如 initMethod、InitializingBean 等方法。
+- **createBeanInstance**：**对象实例化**，其实也就是调用对象的构造方法实例化对象。
+- **populateBean**：**填充属性**，这一步主要是对 bean 的依赖属性进行注入(@Autowired)。
+- **initializeBean**：回调一些形如 initMethod、InitializingBean 等方法。
 
-从对单例 Bean 的初始化可以看出，**循环依赖主要发生在第二步（populateBean）**，也就是 field 属性注入的处理。
+从对单例 Bean 的初始化可以看出，**循环依赖主要发生在第二步（populateBean）**，也就是 field **属性注入**的处理。
 
 ###### (2) 三级缓存
 
-在 Spring 容器的整个声明周期中，**单例 Bean 有且仅有一个对象**，这很容易让人想到可以用缓存来加速访问。
+在 Spring 容器的整个生命周期中，**单例 Bean 有且仅有一个对象**，这很容易让人想到可以用缓存来加速访问。
 Spring 大量运用了 Cache 的手段，在循环依赖问题的解决过程中甚至使用了“**三级缓存**”。
 
 三级缓存其实它更像是 Spring 容器工厂的内的术语，**采用三级缓存模式来解决循环依赖问题**，这三级缓存分别指：
@@ -866,10 +866,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 注：AbstractBeanFactory 继承自 DefaultSingletonBeanRegistry。
 
 1. **singletonObjects**：用于存放**完全初始化好的 bean**，从该缓存中取出的 bean 可以**直接使用**。
-2. **earlySingletonObjects**：存放**提前曝光的单例对象**的缓存，存放原始的 bean 对象（尚未填充属性），用于解决循环依赖。
+2. **earlySingletonObjects**：存放**提前曝光的单例对象**的缓存，存放原始的 bean 对象（**尚未填充属性**），用于解决循环依赖。
 3. **singletonFactories**：单例对象工厂的 cache，**存放 bean 工厂对象**，用于解决循环依赖。
 
-**获取单例 Bean 的源码如下：**
+**获取单例 Bean 的源码如下**：
 
 ```java
 public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements SingletonBeanRegistry {
@@ -909,12 +909,12 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 ```
 
 1. 先从**一级缓存 singletonObjects 中去获取**，如果获取到就直接 return。
-2. 如果获取不到或者对象正在创建中（isSingletonCurrentlyInCreation()），那就再从**二级缓存** earlySingletonObjects 中获取，如果获取到就直接 return。
+2. 如果**获取不到**或者对象正在创建中（isSingletonCurrentlyInCreation()），那就再从**二级缓存** earlySingletonObjects 中获取，如果获取到就直接 return。
 3. 如果还是获取不到，且允许 **singletonFactories**（allowEarlyReference=true）通过 getObject() 获取。就从**三级缓存 singletonFactory.getObject() 获取**。（如果获取到了就从 singletonFactories 中**移除**，并且**放进 earlySingletonObjects**。其实也就是**从三级缓存移动到了二级缓存**。
 
-加入 singletonFactories 三级缓存的**前提是执行了构造器**，所以构造器的循环依赖没法解决。
+加入 singletonFactories 三级缓存的**前提是执行了构造器**，所以**构造器的循环依赖没法解决**。
 
-getSingleton() 从缓存里获取单例对象步骤分析可知，Spring 解决循环依赖的诀窍就在于 **singletonFactories 这个三级缓存**。这个 Cache 里面都是 ObjectFactory，它是解决问题的关键。
+getSingleton() 从缓存里获取单例对象步骤分析可知，Spring 解决循环依赖的诀窍就在于 **singletonFactories 这个三级缓存**。这个 Cache 里面都是 **ObjectFactory**，它是解决问题的关键。
 
 ```java
 // 它可以将创建对象的步骤封装到ObjectFactory中 交给自定义的Scope来选择是否需要创建对象来灵活的实现scope。具体参见Scope接口
@@ -952,7 +952,8 @@ Bean**定义**、Bean**初始化**、Bean**生存期**、Bean**销毁**。
 
 - Bean 容器找到**配置文件**中 Spring Bean 的定义。
 - Bean 容器利用**反射**创建一个 Bean 的**实例**。
-- 如果涉及到一些属性值 利用 set 方法**设置一些属性值**。
+- 如果涉及到一些属性值，利用 set 方法**设置一些属性值**，这里也是解决依赖注入。下面基本上都是调用回调方法了。
+
 - 如果 Bean 实现了 **BeanNameAware** 接口，调用 setBeanName() 方法，传入 **Bean 的名字**。
 - 如果 Bean 实现了 **BeanClassLoaderAware** 接口，调用 setBeanClassLoader() 方法，传入 ClassLoader 对象的实例。
 - 如果 Bean 实现了 **BeanFactoryAware** 接口，调用 setBeanFactory() 方法，传入 **BeanFactory 对象**的实例。
@@ -960,7 +961,7 @@ Bean**定义**、Bean**初始化**、Bean**生存期**、Bean**销毁**。
 - 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor** 对象，执行 **postProcessBeforeInitialization**() 方法。
 - 如果 Bean 实现了 **InitializingBean** 接口，执行 **afterPropertiesSet**() 方法。
 - 如果 Bean 在配置文件中的定义包含 **init-method** 属性，执行指定的方法。
-- 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor** 对象，执行 **postProcessAfterInitialization**() 方法
+- 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor** 对象，执行 **postProcessAfterInitialization**() 方法。
 - 当要销毁 Bean 的时候，如果 Bean 实现了 **DisposableBean** 接口，执行 **destroy**() 方法。
 - 当要销毁 Bean 的时候，如果 Bean 在配置文件中的定义包含 **destroy-method** 属性，执行指定的方法。
 

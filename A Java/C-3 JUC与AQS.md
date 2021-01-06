@@ -8,7 +8,7 @@
 
 JUC 就是 java.util .concurrent 工具包的简称，是一个处理线程的工具包。
 
-AQS 的全称为（**AbstractQueuedSynchronizer**），这个类在 **java.util.concurrent.locks** 包下面，AQS 是 JUC 的核心。JUC 当中的大多数**同步器**实现都是围绕着**共同的基础行为**，比如**等待队列、条件队列、独占获取、共享获取**等，而这个行为的抽象就基于 AQS 实现，AQS 定义了一套**多线程访问共享资源的同步器框架**，是一个**依赖状态(state)的同步器**。
+**AQS** 的全称为（**AbstractQueuedSynchronizer**），这个类在 **java.util.concurrent.locks** 包下面，AQS 是 JUC 的核心。JUC 当中的大多数**同步器**实现都是围绕着**共同的基础行为**，比如**等待队列、条件队列、独占获取、共享获取**等，而这个行为的抽象就基于 AQS 实现，AQS 定义了一套**多线程访问共享资源的同步器框架**，是一个**依赖状态(state)的同步器**。
 
 <img src="assets/image-20200509112113728.png" alt="image-20200509112113728" style="zoom:77%;" />
 

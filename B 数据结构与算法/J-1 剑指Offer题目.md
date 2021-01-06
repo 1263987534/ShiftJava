@@ -1243,35 +1243,37 @@ public double myPow(double base, int power) {
 使用**回溯法**得到所有的数。
 
 ```java
-public void print1ToMaxOfNDigits(int n) {
-    if (n <= 0) return;
+// 用于记录每个位置char的数组
+char[] number;
+int[] res;
+int counter = 0;
+
+public int[] printNumbers(int n) {
+    if (n <= 0) return new int[]{};
+    // 存放结果的数组
+    res = new int[(int) Math.pow(10, n) - 1];
     // 初始化一个num数组用于存放每一位
-    char[] number = new char[n];
+    number = new char[n];
     // 初始digit为0
-    print1ToMaxOfNDigits(number, 0);
+    dfs(0);
+    return res;
 }
 
-private void print1ToMaxOfNDigits(char[] number, int digit) {
+private void dfs(int digit) {
     // 如果digit已经等于位数长度就打印出来
     if (digit == number.length) {
-        // 打印出满足条件的数
-        printNumber(number);
+        int num = Integer.parseInt(new String(number));
+        if (num != 0) {
+            res[counter++] = num;
+        }
         return;
     }
     // 递归打印
     for (int i = 0; i < 10; i++) {
+        // 增加各个位的值
         number[digit] = (char) (i + '0');
-        print1ToMaxOfNDigits(number, digit + 1);
+        dfs(digit + 1);
     }
-}
-
-private void printNumber(char[] number) {
-    int index = 0;
-    while (index < number.length && number[index] == '0')
-        index++;
-    while (index < number.length)
-        System.out.print(number[index++]);
-    System.out.println();
 }
 ```
 
@@ -2549,8 +2551,6 @@ public int majorityElement(int[] nums) {
 
 快排的划分函数每次执行完后都能将数组分成两个部分，**小于等于分界值 pivot 的元素**的都会被放到数组的**左边**，大于的都会被放到数组的右边，然后**返回分界值的下标**。与快速排序不同的是，快速排序会根据分界值的下标**递归处理**划分的两侧，而这里**只需要处理划分的一边**。
 
-
-
 ```java
 public ArrayList<Integer> GetLeastNumbers_Solution(int[] nums, int k) {
     ArrayList<Integer> ret = new ArrayList<>();
@@ -2580,8 +2580,8 @@ private int partition(int[] nums, int l, int h) {
     int p = nums[l];     /* 切分元素 */
     int i = l, j = h + 1;
     while (true) {
-        while (i != h && nums[++i] < p) ;
-        while (j != l && nums[--j] > p) ;
+        while (i != h && nums[i] < p) i++;
+        while (j != l && nums[j] > p) j--;
         if (i >= j)
             break;
         swap(nums, i, j);
@@ -3916,7 +3916,7 @@ public int[] maxSlidingWindow(int[] nums, int k) {
     for (int i = 0; i < res.length; i++) {
         res[i] = resList.get(i);
     }
-    return  res;
+    return res;
 }
 ```
 

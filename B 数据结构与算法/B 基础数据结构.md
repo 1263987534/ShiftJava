@@ -42,7 +42,7 @@
 
 应用场景：记录一个**棋盘**。或者**地图**等，如下所示。
 
-<img src="../../JavaNotes/B 数据结构与算法/assets/1565000508963-1569397664724.png" alt="1565000508963" style="zoom:67%;" />
+<img src="assets/1565000508963-1569397664724.png" alt="1565000508963" style="zoom:67%;" />
 
 因为该二维数组的很多值是**默认值 0**, 因此记录了很多没有意义的数据，考虑使用稀疏数组。
 
@@ -56,7 +56,7 @@
 
 **转化举例**
 
-<img src="../../JavaNotes/B 数据结构与算法/assets/1565001222410-1569397664724.png" alt="1565001222410" style="zoom:60%;" />
+<img src="assets/1565001222410-1569397664724.png" alt="1565001222410" style="zoom:60%;" />
 
 上述数组 0 较多，使用稀疏数组表示，该数组第 0 个元素记录原始数组的行数、列数和有效数据数。后面的值就是记录有效的位置和数据值。
 
@@ -1189,7 +1189,7 @@ public void insert(AnyType newNode) {
 public AnyType deleteMin() {
     // 判空
     if(isEmpty()) {
-        throw new RuntimeException( );
+        throw new RuntimeException();
     }
 	// 找到堆顶的元素
     AnyType minItem = findMin();
